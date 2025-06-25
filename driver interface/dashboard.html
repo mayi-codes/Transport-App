@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Driver Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font-family for consistency */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for alternating rows in earnings modal for better readability */
+        .ride-entry-card:nth-child(odd) {
+            background-color: #f9fafb; /* Lighter background for odd rows */
+        }
+        .ride-entry-card {
+            border-bottom: 1px solid #e5e7eb; /* Soft separator between ride entries */
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+        .ride-entry-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+        }
+        .ride-entry-card:last-child {
+            border-bottom: none; /* No border for the last item */
+        }
+        /* Styles for the chat bubble - Enhanced */
+        .chat-message-container {
+            display: flex;
+            margin-bottom: 10px;
+            /* No align-items: flex-end needed as no avatars to align with */
+        }
+        .chat-message-container.sent {
+            justify-content: flex-end; /* Push driver messages to the right */
+        }
+        .chat-message-container.received {
+            justify-content: flex-start; /* Push customer messages to the left */
+        }
+        /* Removed .chat-avatar styles */
+        .chat-bubble {
+            max-width: 75%; /* Slightly more width for messages */
+            padding: 10px 14px;
+            border-radius: 18px; /* More rounded corners */
+            word-wrap: break-word;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            /* Adjust margins since avatars are removed */
+            margin: 0; /* Reset margins */
+        }
+        .chat-bubble.sent {
+            background-color: #dcf8c6; /* Light green */
+            color: #333;
+            border-bottom-right-radius: 4px; /* Pointed corner */
+            margin-left: auto; /* Push to right */
+        }
+        .chat-bubble.received {
+            background-color: #e5e7eb; /* Light gray */
+            color: #333;
+            border-bottom-left-radius: 4px; /* Pointed corner */
+            margin-right: auto; /* Push to left */
+        }
+        .chat-timestamp {
+            font-size: 0.7rem;
+            color: #718096;
+            margin-top: 4px;
+            text-align: right;
+        }
+        .chat-message-container.received .chat-timestamp {
+            text-align: left;
+        }
+        /* Custom styles for progress bar */
+        .progress-bar-container {
+            background-color: #e2e8f0; /* bg-gray-200 */
+            border-radius: 9999px; /* rounded-full */
+            height: 8px; /* h-2 */
+            overflow: hidden;
+            margin-top: 8px; /* mt-2 */
+        }
+        .progress-bar-fill {
+            background: linear-gradient(to right, #fb923c, #ea580c); /* from-orange-400 to-orange-700 */
+            height: 100%;
+            border-radius: 9999px; /* rounded-full */
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-green-50 min-h-screen p-4 flex items-center justify-center">
+    <div class="max-w-md w-full bg-white p-6 rounded-2xl shadow-xl space-y-6">
+
+        <!-- Header with profile -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">🚖 ChakraX Driver</h2>
+                <p class="text-sm text-gray-500 mt-1">Welcome back, Captain!</p>
+            </div>
+            <img src="https://cdn-icons-png.flaticon.com/512/1995/1995574.png" alt="Driver" class="w-12 h-12 rounded-full border-2 border-emerald-500 p-0.5 shadow-sm">
+        </div>
+
+        <!-- Welcome & Status with Slider Toggle -->
+        <div class="bg-green-100 p-4 rounded-xl text-center shadow-inner">
+            <p class="text-lg text-gray-800 font-semibold">🙏 Hello, <span id="dashboardDriverName" class="text-emerald-700">Driver</span></p>
+
+            <div class="flex justify-center items-center gap-3 mt-4">
+                <label class="text-sm text-gray-700 font-medium">Current Status:</label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="statusSwitch" class="sr-only peer">
+                    <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-500"></div>
+                </label>
+            </div>
+
+            <p id="statusText" class="mt-3 text-sm text-gray-700">You are currently: <strong class="text-red-600">Offline</strong></p>
+        </div>
+
+        <!-- New Ride Request Section (Dynamic) -->
+        <div id="newRideSection" class="bg-blue-50 p-4 rounded-xl shadow-inner hidden border border-blue-200">
+            <h3 class="text-lg font-bold text-blue-800 mb-3 flex items-center justify-center gap-2">
+                <span class="animate-pulse">🔔</span> New Ride Request!
+            </h3>
+            <div class="flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-gray-700">
+                <div class="text-center md:text-left space-y-1">
+                    <p class="font-semibold">From: <span class="font-normal text-gray-800" id="requestFrom">Koramangala, Bengaluru</span></p>
+                    <p class="font-semibold">To: <span class="font-normal text-gray-800" id="requestTo">Indiranagar, Bengaluru</span></p>
+                    <p class="font-semibold">Fare: <span class="font-normal text-green-700 text-lg" id="requestFare">₹220</span></p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button onclick="acceptRideAndShowCustomerDetails();" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                        Accept Ride
+                    </button>
+                    <button onclick="showMessage('Ride declined.', 'info'); hideRideRequest();" class="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75">
+                        Cancel Ride
+                    </button>
+                </div>
+            </div>
+
+            <!-- Customer Details Section (Initially Hidden) -->
+            <div id="customerDetailsSection" class="hidden mt-6 pt-4 border-t border-blue-300 text-gray-800">
+                <h4 class="text-base font-bold text-blue-700 mb-2">Customer Details:</h4>
+                <div class="flex items-center space-x-3 mb-2">
+                    <img id="customerPhoto" src="https://placehold.co/40x40/cccccc/ffffff?text=C" alt="Customer" class="w-10 h-10 rounded-full border-2 border-blue-400">
+                    <div>
+                        <p class="font-semibold" id="customerName">Priya Sharma</p>
+                        <p class="text-sm text-gray-600" id="customerRating">Rating: ★★★★★ (4.9)</p>
+                    </div>
+                </div>
+                <p class="text-sm">Pickup Instructions: <span class="font-normal" id="customerInstructions">Near main gate, next to the cafe.</span></p>
+                <p class="text-sm mt-1">Booking Time: <span class="font-normal" id="bookingTime">10:30 AM (2 min ago)</span></p>
+                <p class="text-sm mt-1">Payment Method: <span class="font-normal" id="paymentMethod">Online Wallet</span></p>
+
+                <!-- New: Customer Interaction Buttons -->
+                <div class="flex gap-2 mt-4">
+                    <button onclick="initiateCall();" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75">
+                        📞 Call Customer
+                    </button>
+                    <button onclick="openChatModal();" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-3 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+                        💬 Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Buttons -->
+        <div class="grid grid-cols-1 gap-4 text-center">
+            <button onclick="showEarnings()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-75">
+                💰 View Earnings
+            </button>
+
+            <button onclick="showPromotions()" class="bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-75">
+                🎁 Promotions & Incentives
+            </button>
+
+            <button onclick="showMessage('Trip history coming soon!', 'info')" class="bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                🛣️ Trip History
+            </button>
+
+            <button onclick="showMessage('Profile view coming soon!', 'info')" class="bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75">
+                👤 My Profile
+            </button>
+            <button onclick="showMessage('Logged out successfully!', 'info');" class="bg-gray-800 hover:bg-black text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-opacity-75">
+                🚪 Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Earnings Modal -->
+    <div id="earningsModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
+        <div class="bg-white w-11/12 max-w-lg p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeEarnings()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <h2 class="text-2xl font-bold text-emerald-700 mb-6 text-center">📊 Your Earnings Dashboard</h2>
+
+            <div class="space-y-6 text-gray-700">
+                <!-- Current Earnings Summary (Weekly) -->
+                <div class="bg-emerald-500 text-white p-5 rounded-xl shadow-md text-center">
+                    <p class="text-sm font-semibold">Total Earnings</p>
+                    <p id="totalEarningsDisplay" class="text-4xl font-bold mt-1">₹0</p>
+                    <p id="weeklyPeriodDisplay" class="text-xs mt-2">Week of --</p>
+                </div>
+
+                <!-- Key Weekly Metrics -->
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Key Weekly Metrics</h3>
+                <div class="grid grid-cols-3 gap-4 text-center text-sm font-semibold">
+                    <div class="bg-green-100 p-3 rounded-lg shadow-sm">
+                        <p id="ridesThisWeek" class="text-emerald-700 text-xl font-bold">0</p>
+                        <p class="text-gray-600">Rides</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg shadow-sm">
+                        <p id="avgRatingDisplay" class="text-emerald-700 text-xl font-bold">0.0</p>
+                        <p class="text-gray-600">Avg. Rating</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg shadow-sm">
+                        <p id="onlineHoursDisplay" class="text-emerald-700 text-xl font-bold">0<span class="text-lg">h</span></p>
+                        <p class="text-gray-600">Online Hours</p>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics (KPI) -->
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Your Performance At A Glance</h3>
+                <div class="grid grid-cols-2 gap-4 text-center text-sm font-semibold">
+                    <div class="bg-purple-100 p-3 rounded-lg shadow-sm">
+                        <p id="acceptanceRateDisplay" class="text-purple-700 text-xl font-bold">0<span class="text-lg">%</span></p>
+                        <p class="text-gray-600">Acceptance Rate</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg shadow-sm">
+                        <p id="completionRateDisplay" class="text-purple-700 text-xl font-bold">0<span class="text-lg">%</span></p>
+                        <p class="text-gray-600">Completion Rate</p>
+                    </div>
+                </div>
+
+                <!-- Detailed Ride History / Earnings Breakdown with Filter -->
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Detailed Ride History</h3>
+
+                <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <label for="weekFilter" class="text-sm font-medium text-gray-700">Select Week:</label>
+                    <select id="weekFilter" class="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 text-sm w-full sm:w-auto">
+                        <!-- Options will be dynamically populated by JavaScript -->
+                    </select>
+                </div>
+
+                <div id="rideHistoryContainer" class="space-y-4">
+                    <!-- Ride entries will be dynamically populated here -->
+                </div>
+
+                <!-- Weekly & Monthly Overview Call to Action -->
+                <div class="mt-6 pt-4 border-t-2 border-dashed border-gray-300 text-center">
+                    <p class="text-lg font-semibold text-gray-800">Looking for more? </p>
+                    <p class="text-sm text-gray-600 mt-1">Access your detailed weekly and monthly earnings reports, along with in-depth performance analytics, in your Trip History section!</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotions Modal -->
+    <div id="promotionsModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
+        <div class="bg-white w-11/12 max-w-lg p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closePromotions()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <h2 class="text-2xl font-bold text-orange-700 mb-6 text-center">🎁 Your Promotions & Incentives</h2>
+
+            <div class="space-y-6 text-gray-700">
+                <!-- Active Promotions -->
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Active Promotions</h3>
+                <div id="activePromotionsContainer" class="space-y-4">
+                    <!-- Promotions will be dynamically populated here -->
+                </div>
+
+                <!-- Completed Incentives -->
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4 mt-8">Completed Incentives</h3>
+                <div id="completedIncentivesContainer" class="space-y-4">
+                    <!-- Completed incentives will be dynamically populated here -->
+                </div>
+
+                <!-- Future Incentives / Info -->
+                <div class="mt-6 pt-4 border-t-2 border-dashed border-gray-300 text-center">
+                    <p class="text-lg font-semibold text-gray-800">Stay Tuned!</p>
+                    <p class="text-sm text-gray-600 mt-1">New promotions and exciting incentives are added regularly. Keep driving to unlock more rewards!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Box Modal -->
+    <div id="messageModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-[100] p-4">
+        <div class="bg-white p-6 rounded-xl shadow-lg relative max-w-sm w-11/12 text-center transform scale-100 transition-transform duration-300 ease-out">
+            <button onclick="closeMessage()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <p id="messageContent" class="text-lg text-gray-800 mb-4"></p>
+            <button onclick="closeMessage()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-5 rounded-lg shadow-md transition-all duration-200 ease-in-out">OK</button>
+        </div>
+    </div>
+
+    <!-- Chat Modal -->
+    <div id="chatModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
+        <div class="bg-white w-11/12 max-w-md p-6 rounded-xl shadow-lg relative flex flex-col h-[80vh] sm:h-[600px]">
+            <button onclick="closeChatModal()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <h2 class="text-xl font-bold text-indigo-700 mb-4 text-center">💬 Chat with <span id="chatCustomerName">Customer</span></h2>
+
+            <!-- Chat messages display area -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 border border-gray-200 rounded-lg mb-4 bg-gray-50 flex flex-col">
+                <!-- Chat messages will be appended here -->
+            </div>
+
+            <!-- Quick Reply Buttons -->
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <button onclick="sendQuickReply('On my way!')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-2 px-3 rounded-lg transition-all duration-150">On my way!</button>
+                <button onclick="sendQuickReply('Arriving in 2 mins.')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-2 px-3 rounded-lg transition-all duration-150">Arriving in 2 mins.</button>
+                <button onclick="sendQuickReply('Facing slight traffic.')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-2 px-3 rounded-lg transition-all duration-150">Facing slight traffic.</button>
+                <button onclick="sendQuickReply('Please confirm pickup location.')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-2 px-3 rounded-lg transition-all duration-150">Confirm pickup?</button>
+            </div>
+
+            <!-- Chat input area -->
+            <div class="flex">
+                <input type="text" id="chatInput" class="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Type your message...">
+                <button onclick="sendMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-5 rounded-r-lg shadow-md transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Dummy data for different weeks (existing data)
+        const allRidesData = {
+            "week_current": { // Week of Jun 17 - Jun 23
+                period: 'Jun 17 - Jun 23',
+                totalEarnings: '₹8,750',
+                rides: 45,
+                avgRating: 4.7,
+                onlineHours: 50,
+                acceptanceRate: 95,
+                completionRate: 98,
+                trips: [
+                    { date: '19 Jun 2025', rating: '★★★★★', cost: '₹180', pickup: 'Indiranagar', drop: 'Koramangala', feedback: '"Friendly!"' },
+                    { date: '19 Jun 2025', rating: '★★★★☆', cost: '₹250', pickup: 'Jayanagar', drop: 'Electronic City', feedback: '"Good driver"' },
+                    { date: '18 Jun 2025', rating: '★★★★★', cost: '₹120', pickup: 'Whitefield', drop: 'Marathahalli', feedback: '"Smooth ride"' },
+                    { date: '18 Jun 2025', rating: '★★★☆☆', cost: '₹90', pickup: 'Domlur', drop: 'Shivajinagar', feedback: '"A bit slow"' },
+                    { date: '17 Jun 2025', rating: '★★★★☆', cost: '₹300', pickup: 'HSR Layout', drop: 'MG Road', feedback: '"Pleasant"' },
+                    { date: '17 Jun 2025', rating: '★★★★★', cost: '₹150', pickup: 'BTM Layout', drop: 'Bannerghatta Road', feedback: '"Excellent!"' },
+                    { date: '17 Jun 2025', rating: '★★★★☆', cost: '₹100', pickup: 'JP Nagar', drop: 'Kanakapura Road', feedback: '"Quick ride"' }
+                ]
+            },
+            "week_last": { // Week of Jun 10 - Jun 16
+                period: 'Jun 10 - Jun 16',
+                totalEarnings: '₹7,200',
+                rides: 40,
+                avgRating: 4.5,
+                onlineHours: 48,
+                acceptanceRate: 92,
+                completionRate: 96,
+                trips: [
+                    { date: '16 Jun 2025', rating: '★★★★★', cost: '₹200', pickup: 'MG Road', drop: 'Whitefield', feedback: '"Fantastic service!"' },
+                    { date: '15 Jun 2025', rating: '★★★★☆', cost: '₹170', pickup: 'Koramangala', drop: 'Kalyan Nagar', feedback: '"Comfortable"' },
+                    { date: '14 Jun 2025', rating: '★★★★☆', cost: '₹110', pickup: 'Electronic City', drop: 'Domlur', feedback: '"Smooth pickup"' },
+                    { date: '13 Jun 2025', rating: '★★★★★', cost: '₹280', pickup: 'Marathahalli', drop: 'Airport', feedback: '"Very efficient"' },
+                    { date: '12 Jun 2025', rating: '★★★☆☆', cost: '₹95', pickup: 'Shivajinagar', drop: 'Richmond Road', feedback: '"Average"' }
+                ]
+            },
+            "week_two_weeks_ago": { // Week of Jun 03 - Jun 09
+                period: 'Jun 03 - Jun 09',
+                totalEarnings: '₹6,500',
+                rides: 38,
+                avgRating: 4.4,
+                onlineHours: 45,
+                acceptanceRate: 90,
+                completionRate: 95,
+                trips: [
+                    { date: '09 Jun 2025', rating: '★★★★★', cost: '₹160', pickup: 'Jayanagar', drop: 'Bannerghatta Road', feedback: '"Polite driver"' },
+                    { date: '08 Jun 2025', rating: '★★★★☆', cost: '₹220', pickup: 'Indiranagar', drop: 'HSR Layout', feedback: '"Good route knowledge"' },
+                    { date: '07 Jun 2025', rating: '★★★★☆', cost: '₹100', pickup: 'Koramangala', drop: 'BTM Layout', feedback: '"Fast ride"' }
+                ]
+            }
+        };
+
+        // Dummy Customer Data for a new ride request
+        const dummyCustomer = {
+            name: "Aisha M.",
+            rating: "4.7",
+            photo: "https://placehold.co/40x40/007bff/ffffff?text=AM", // Placeholder for customer photo
+            instructions: "Waiting near the big banyan tree. Please call if you can't find me.",
+            bookingTime: "11:15 AM (1 min ago)",
+            paymentMethod: "Cash",
+            phoneNumber: "+91 98765 43210" // Dummy phone number
+        };
+
+        // Dummy data for Promotions and Incentives
+        const promotionsData = {
+            active: [
+                {
+                    icon: '🌟',
+                    title: "Weekend Ride Bonus",
+                    description: "Complete 10 rides this weekend (Sat-Sun) and get a ₹500 bonus!",
+                    status: "Active",
+                    progress: "5/10", // Format: "current/total"
+                    validity: "Ends: Jun 29, 2025"
+                },
+                {
+                    icon: '⚡',
+                    title: "Peak Hour Incentive",
+                    description: "Earn 1.5x on fares during 8 AM - 10 AM and 5 PM - 7 PM on weekdays.",
+                    status: "Active",
+                    validity: "Ongoing"
+                },
+                {
+                    icon: '🤝',
+                    title: "Refer a Friend",
+                    description: "Refer a new driver and earn ₹1,000 once they complete their first 5 rides.",
+                    status: "Active",
+                    validity: "No expiry"
+                }
+            ],
+            completed: [
+                {
+                    icon: '✅',
+                    title: "Monday Mania Bonus",
+                    description: "Completed 7 rides on Monday, earned ₹200 bonus!",
+                    date: "Jun 23, 2025",
+                    earnings: "₹200"
+                },
+                {
+                    icon: '🎉',
+                    title: "New Driver Welcome Bonus",
+                    description: "Successfully completed your first 20 rides within the first week. Earned ₹1,500!",
+                    date: "Jun 10, 2025",
+                    earnings: "₹1,500"
+                }
+            ]
+        };
+
+
+        // Online/Offline Status Toggle
+        const statusText = document.getElementById("statusText");
+        const toggleSwitch = document.getElementById("statusSwitch");
+        const newRideSection = document.getElementById("newRideSection");
+        const customerDetailsSection = document.getElementById("customerDetailsSection");
+
+        toggleSwitch.addEventListener("change", () => {
+            if (toggleSwitch.checked) {
+                statusText.innerHTML = `You are currently: <strong class="text-green-600">Online</strong>`;
+                // Simulate showing a ride request after a delay when going online
+                setTimeout(() => {
+                    newRideSection.classList.remove("hidden");
+                    customerDetailsSection.classList.add("hidden"); // Ensure customer details are hidden initially
+                }, 1000);
+            } else {
+                statusText.innerHTML = `You are currently: <strong class="text-red-600">Offline</strong>`;
+                newRideSection.classList.add("hidden"); // Hide new ride section when offline
+                customerDetailsSection.classList.add("hidden"); // Hide customer details if offline
+            }
+        });
+
+        // Function to hide the ride request section (and customer details)
+        function hideRideRequest() {
+            newRideSection.classList.add("hidden");
+            customerDetailsSection.classList.add("hidden");
+        }
+
+        // Message Box Functions
+        const messageModal = document.getElementById("messageModal");
+        const messageContent = document.getElementById("messageContent");
+
+        function showMessage(message, type = 'info') { // Added 'type' parameter for future styling if needed
+            messageContent.textContent = message;
+            messageModal.classList.remove("hidden");
+            // Add a slight transform for a pop-in effect
+            messageModal.querySelector('.bg-white').classList.add('scale-100');
+        }
+
+        function closeMessage() {
+            messageModal.querySelector('.bg-white').classList.remove('scale-100');
+            messageModal.classList.add("hidden");
+            // Special handling for logout: redirect after closing message
+            if (messageContent.textContent === 'Logged out successfully!') {
+                window.location.href = "index.html"; // Redirect to login page, replace with actual login path if different
+            }
+        }
+
+        // Function: Accept Ride and Show Customer Details
+        function acceptRideAndShowCustomerDetails() {
+            showMessage('Ride accepted! Customer details displayed below. Navigating now...', 'success');
+
+            // Populate customer details
+            document.getElementById('customerName').textContent = dummyCustomer.name;
+            document.getElementById('customerRating').textContent = `Rating: ★★★★★ (${dummyCustomer.rating})`;
+            document.getElementById('customerPhoto').src = dummyCustomer.photo;
+            document.getElementById('customerInstructions').textContent = dummyCustomer.instructions;
+            document.getElementById('bookingTime').textContent = dummyCustomer.bookingTime;
+            document.getElementById('paymentMethod').textContent = dummyCustomer.paymentMethod;
+
+            // Show the customer details section
+            customerDetailsSection.classList.remove("hidden");
+        }
+
+        // --- New: Customer Interaction Functions ---
+
+        // Phone Call Function
+        function initiateCall() {
+            // In a real application, this would integrate with a telephony API or dialer.
+            // For now, we simulate it with a message.
+            showMessage(`Calling ${dummyCustomer.name} at ${dummyCustomer.phoneNumber}...`, 'info');
+        }
+
+        // Chat Modal Elements
+        const chatModal = document.getElementById('chatModal');
+        const chatCustomerName = document.getElementById('chatCustomerName');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+
+        // Dummy chat history
+        const chatHistory = [
+            { sender: 'customer', message: 'Hi, are you on the way?', timestamp: '11:16 AM' },
+            { sender: 'driver', message: 'Yes, almost there! Traffic is a bit heavy.', timestamp: '11:17 AM' },
+            { sender: 'customer', message: 'Okay, no problem. Just wanted to check. Thanks!', timestamp: '11:18 AM' }
+        ];
+
+        // Possible customer responses for simulation
+        const customerResponses = [
+            "Got it! Looking forward to the ride.",
+            "Okay, thanks for the update!",
+            "No problem, see you soon.",
+            "Appreciate the heads-up!",
+            "Thanks for letting me know."
+        ];
+
+        // Function to open chat modal
+        function openChatModal() {
+            chatCustomerName.textContent = dummyCustomer.name;
+            chatModal.classList.remove("hidden");
+            populateChatMessages();
+            // Scroll to the bottom of the chat
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            chatInput.focus(); // Focus on the input field
+        }
+
+        // Function to close chat modal
+        function closeChatModal() {
+            chatModal.classList.add("hidden");
+            chatMessages.innerHTML = ''; // Clear messages when closing
+            chatInput.value = ''; // Clear input field
+        }
+
+        // Function to display messages in the chat modal
+        function populateChatMessages() {
+            chatMessages.innerHTML = ''; // Clear existing messages
+            chatHistory.forEach(msg => {
+                appendChatMessage(msg.message, msg.sender, msg.timestamp);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to bottom
+        }
+
+        // Helper function to append a single message to the chat
+        function appendChatMessage(message, sender, timestamp) {
+            const messageContainer = document.createElement('div');
+            messageContainer.classList.add('chat-message-container', sender === 'driver' ? 'sent' : 'received');
+
+            const bubbleElement = document.createElement('div');
+            bubbleElement.classList.add('chat-bubble', sender === 'driver' ? 'sent' : 'received');
+            bubbleElement.innerHTML = `
+                <p class="text-sm">${message}</p>
+                <span class="chat-timestamp">${timestamp}</span>
+            `;
+
+            messageContainer.appendChild(bubbleElement); // Only append the bubble
+
+            chatMessages.appendChild(messageContainer);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Keep scrolled to bottom
+        }
+
+        // Function to send a message
+        function sendMessage() {
+            const messageText = chatInput.value.trim();
+            if (messageText) {
+                const now = new Date();
+                const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                appendChatMessage(messageText, 'driver', timestamp); // Add driver's message
+
+                chatHistory.push({ sender: 'driver', message: messageText, timestamp: timestamp }); // Add to history
+
+                chatInput.value = ''; // Clear input
+
+                // Simulate a customer response after a short delay
+                setTimeout(() => {
+                    // Randomly select a customer response
+                    const randomIndex = Math.floor(Math.random() * customerResponses.length);
+                    const customerResponse = customerResponses[randomIndex];
+
+                    const responseTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    appendChatMessage(customerResponse, 'customer', responseTimestamp);
+                    chatHistory.push({ sender: 'customer', message: customerResponse, timestamp: responseTimestamp });
+                }, 1500);
+            }
+        }
+
+        // Function to send quick reply
+        function sendQuickReply(replyText) {
+            chatInput.value = replyText; // Pre-fill input
+            sendMessage(); // Send the message
+        }
+
+        // Allow sending message with Enter key
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent new line
+                sendMessage();
+            }
+        });
+
+        // --- End of New Functions ---
+
+        // Earnings Modal Specifics
+        const earningsModal = document.getElementById("earningsModal");
+        const totalEarningsDisplay = document.getElementById('totalEarningsDisplay');
+        const weeklyPeriodDisplay = document.getElementById('weeklyPeriodDisplay');
+        const ridesThisWeek = document.getElementById('ridesThisWeek');
+        const avgRatingDisplay = document.getElementById('avgRatingDisplay');
+        const onlineHoursDisplay = document.getElementById('onlineHoursDisplay');
+        const acceptanceRateDisplay = document.getElementById('acceptanceRateDisplay');
+        const completionRateDisplay = document.getElementById('completionRateDisplay');
+        const weekFilter = document.getElementById('weekFilter');
+        const rideHistoryContainer = document.getElementById('rideHistoryContainer');
+
+        // Function to update the earnings display based on selected week
+        function updateEarningsDisplay(weekData) {
+            totalEarningsDisplay.textContent = weekData.totalEarnings;
+            weeklyPeriodDisplay.textContent = `Week of ${weekData.period}`;
+            ridesThisWeek.textContent = weekData.rides;
+            avgRatingDisplay.textContent = weekData.avgRating.toFixed(1);
+            onlineHoursDisplay.innerHTML = `${weekData.onlineHours}<span class="text-lg">h</span>`;
+            acceptanceRateDisplay.innerHTML = `${weekData.acceptanceRate}<span class="text-lg">%</span>`;
+            completionRateDisplay.innerHTML = `${weekData.completionRate}<span class="text-lg">%</span>`;
+        }
+
+        // Function to populate ride history
+        function populateRideHistory(trips) {
+            rideHistoryContainer.innerHTML = ''; // Clear previous entries
+            if (trips && trips.length > 0) {
+                trips.forEach(trip => {
+                    const rideCard = `
+                        <div class="bg-white p-4 rounded-lg shadow-sm ride-entry-card">
+                            <div class="flex justify-between items-center text-sm mb-2">
+                                <span class="text-gray-600">${trip.date}</span>
+                                <span class="font-semibold text-green-700">${trip.cost}</span>
+                            </div>
+                            <p class="text-sm text-gray-800"><span class="font-semibold">From:</span> ${trip.pickup}</p>
+                            <p class="text-sm text-gray-800"><span class="font-semibold">To:</span> ${trip.drop}</p>
+                            <div class="flex justify-between items-center text-xs mt-2">
+                                <span class="text-yellow-500">${trip.rating}</span>
+                                <span class="text-gray-500 italic">${trip.feedback}</span>
+                            </div>
+                        </div>
+                    `;
+                    rideHistoryContainer.insertAdjacentHTML('beforeend', rideCard);
+                });
+            } else {
+                rideHistoryContainer.innerHTML = '<p class="text-center text-gray-500">No rides recorded for this week.</p>';
+            }
+        }
+
+        // Function to populate the week filter dropdown
+        function populateWeekFilter() {
+            // Clear existing options first
+            weekFilter.innerHTML = '';
+            for (const key in allRidesData) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `Week of ${allRidesData[key].period}`;
+                weekFilter.appendChild(option);
+            }
+            // Set the current week as default
+            weekFilter.value = 'week_current';
+        }
+
+        // Event listener for week filter change
+        weekFilter.addEventListener('change', (event) => {
+            const selectedWeekKey = event.target.value;
+            const selectedWeekData = allRidesData[selectedWeekKey];
+            if (selectedWeekData) {
+                updateEarningsDisplay(selectedWeekData);
+                populateRideHistory(selectedWeekData.trips);
+            }
+        });
+
+        // Function to show earnings modal
+        function showEarnings() {
+            populateWeekFilter(); // Populate dropdown whenever modal is opened
+            const currentWeekData = allRidesData['week_current'];
+            updateEarningsDisplay(currentWeekData);
+            populateRideHistory(currentWeekData.trips);
+            earningsModal.classList.remove("hidden");
+        }
+
+        // Function to close earnings modal
+        function closeEarnings() {
+            earningsModal.classList.add("hidden");
+        }
+
+        // --- Promotions Modal Functions ---
+        const promotionsModal = document.getElementById("promotionsModal");
+        const activePromotionsContainer = document.getElementById("activePromotionsContainer");
+        const completedIncentivesContainer = document.getElementById("completedIncentivesContainer");
+
+        function populatePromotions() {
+            activePromotionsContainer.innerHTML = '';
+            if (promotionsData.active.length > 0) {
+                promotionsData.active.forEach(promo => {
+                    let progressBarHtml = '';
+                    if (promo.progress) {
+                        const [current, total] = promo.progress.split('/').map(Number);
+                        const percentage = (current / total) * 100;
+                        progressBarHtml = `
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: ${percentage}%"></div>
+                            </div>
+                            <p class="text-xs text-blue-600 mt-1 font-semibold">${current}/${total} rides completed</p>
+                        `;
+                    }
+
+                    const promoCard = `
+                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-xl shadow-md border border-orange-300">
+                            <div class="flex items-center mb-2">
+                                <span class="text-3xl mr-3">${promo.icon}</span>
+                                <h4 class="text-xl font-bold text-orange-800">${promo.title}</h4>
+                            </div>
+                            <p class="text-sm text-gray-700 leading-snug">${promo.description}</p>
+                            ${progressBarHtml}
+                            <div class="flex justify-between items-center text-xs mt-3 pt-2 border-t border-orange-200">
+                                <span class="text-gray-600">Status: <span class="font-semibold text-orange-700">${promo.status}</span></span>
+                                <span class="text-gray-600">Validity: ${promo.validity}</span>
+                            </div>
+                        </div>
+                    `;
+                    activePromotionsContainer.insertAdjacentHTML('beforeend', promoCard);
+                });
+            } else {
+                activePromotionsContainer.innerHTML = '<p class="text-center text-gray-500 py-4">No active promotions currently. Check back soon!</p>';
+            }
+
+            completedIncentivesContainer.innerHTML = '';
+            if (promotionsData.completed.length > 0) {
+                promotionsData.completed.forEach(incentive => {
+                    const incentiveCard = `
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl shadow-md border border-green-300">
+                            <div class="flex items-center mb-2">
+                                <span class="text-3xl mr-3">${incentive.icon}</span>
+                                <h4 class="text-xl font-bold text-green-800">${incentive.title}</h4>
+                            </div>
+                            <p class="text-sm text-gray-700 leading-snug">${incentive.description}</p>
+                            <div class="flex justify-between items-center text-xs mt-3 pt-2 border-t border-green-200">
+                                <span class="text-gray-600">Date: <span class="font-semibold">${incentive.date}</span></span>
+                                <span class="text-gray-600">Earned: <span class="font-bold text-green-700">${incentive.earnings}</span></span>
+                            </div>
+                        </div>
+                    `;
+                    completedIncentivesContainer.insertAdjacentHTML('beforeend', incentiveCard);
+                });
+            } else {
+                completedIncentivesContainer.innerHTML = '<p class="text-center text-gray-500 py-4">No completed incentives yet. Keep driving to earn more!</p>';
+            }
+        }
+
+        function showPromotions() {
+            populatePromotions();
+            promotionsModal.classList.remove("hidden");
+        }
+
+        function closePromotions() {
+            promotionsModal.classList.add("hidden");
+        }
+        // --- End Promotions Modal Functions ---
+
+        // Initialize dashboard driver name
+        document.addEventListener("DOMContentLoaded", () => {
+            const driverName = "Rajesh"; // Replace with actual driver name if available from backend
+            document.getElementById("dashboardDriverName").textContent = driverName;
+        });
+
+    </script>
+</body>
+</html>
