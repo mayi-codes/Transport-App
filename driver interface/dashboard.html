@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Driver Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Custom font-family for consistency */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for alternating rows in earnings modal for better readability */
+        .ride-entry-card:nth-child(odd) {
+            background-color: #f9fafb; /* Lighter background for odd rows */
+        }
+        .ride-entry-card {
+            border-bottom: 1px solid #e5e7eb; /* Soft separator between ride entries */
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+        .ride-entry-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+        }
+        .ride-entry-card:last-child {
+            border-bottom: none; /* No border for the last item */
+        }
+        /* Styles for the chat bubble - Enhanced */
+        .chat-message-container {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .chat-message-container.sent {
+            justify-content: flex-end; /* Push driver messages to the right */
+        }
+        .chat-message-container.received {
+            justify-content: flex-start; /* Push customer messages to the left */
+        }
+        .chat-bubble {
+            max-width: 75%; /* Slightly more width for messages */
+            padding: 10px 14px;
+            border-radius: 18px; /* More rounded corners */
+            word-wrap: break-word;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            margin: 0; /* Reset margins */
+        }
+        .chat-bubble.sent {
+            background-color: #dcf8c6; /* Light green */
+            color: #333;
+            border-bottom-right-radius: 4px; /* Pointed corner */
+            margin-left: auto; /* Push to right */
+        }
+        .chat-bubble.received {
+            background-color: #e5e7eb; /* Light gray */
+            color: #333;
+            border-bottom-left-radius: 4px; /* Pointed corner */
+            margin-right: auto; /* Push to left */
+        }
+        .chat-timestamp {
+            font-size: 0.7rem;
+            color: #718096;
+            margin-top: 4px;
+            text-align: right;
+        }
+        .chat-message-container.received .chat-timestamp {
+            text-align: left;
+        }
+        /* Custom styles for progress bar */
+        .progress-bar-container {
+            background-color: #e2e8f0; /* bg-gray-200 */
+            border-radius: 9999px; /* rounded-full */
+            height: 8px; /* h-2 */
+            overflow: hidden;
+            margin-top: 8px; /* mt-2 */
+        }
+        .progress-bar-fill {
+            background: linear-gradient(to right, #fb923c, #ea580c); /* from-orange-400 to-orange-700 */
+            height: 100%;
+            border-radius: 9999px; /* rounded-full */
+            transition: width 0.5s ease-in-out;
+        }
+        /* Custom styles for trip cards */
+        .trip-card {
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+        .trip-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        .achievement-badge {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            color: #4a5568;
+        }
+        .achievement-badge span {
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body class="bg-green-50 min-h-screen p-4 flex items-center justify-center">
+    <div class="max-w-md w-full bg-white p-6 rounded-2xl shadow-xl space-y-6">
+
+        <!-- Header with profile -->
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800">🚖 ChakraX Driver</h2>
+                <p class="text-sm text-gray-500 mt-1">Welcome back, Captain!</p>
+            </div>
+            <img src="https://cdn-icons-png.flaticon.com/512/1995/1995574.png" alt="Driver" class="w-12 h-12 rounded-full border-2 border-emerald-500 p-0.5 shadow-sm">
+        </div>
+
+        <!-- Welcome & Status with Slider Toggle -->
+        <div class="bg-green-100 p-4 rounded-xl text-center shadow-inner">
+            <p class="text-lg text-gray-800 font-semibold">🙏 Hello, <span id="dashboardDriverName" class="text-emerald-700">Harish</span></p>
+
+            <div class="flex justify-center items-center gap-3 mt-4">
+                <label class="text-sm text-gray-700 font-medium">Current Status:</label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="statusSwitch" class="sr-only peer">
+                    <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-green-500"></div>
+                </label>
+            </div>
+
+            <p id="statusText" class="mt-3 text-sm text-gray-700">You are currently: <strong class="text-red-600">Offline</strong></p>
+        </div>
+
+        <!-- New Ride Request Section (Dynamic) -->
+        <div id="newRideSection" class="bg-blue-50 p-4 rounded-xl shadow-inner hidden border border-blue-200">
+            <h3 class="text-lg font-bold text-blue-800 mb-3 flex items-center justify-center gap-2">
+                <span class="animate-pulse">🔔</span> New Ride Request!
+            </h3>
+            <div class="flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-gray-700">
+                <div class="text-center md:text-left space-y-1">
+                    <p class="font-semibold">From: <span class="font-normal text-gray-800" id="requestFrom">Koramangala, Bengaluru</span></p>
+                    <p class="font-semibold">To: <span class="font-normal text-gray-800" id="requestTo">Indiranagar, Bengaluru</span></p>
+                    <p class="font-semibold">Fare: <span class="font-normal text-green-700 text-lg" id="requestFare">₹220</span></p>
+                </div>
+                <div id="rideActionButtons" class="flex flex-col gap-2">
+                    <button onclick="acceptRideAndShowCustomerDetails();" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                        Accept Ride
+                    </button>
+                    <button onclick="hideRideRequest(); showMessage('Ride declined.', 'info');" class="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75">
+                        Cancel Ride
+                    </button>
+                </div>
+            </div>
+
+            <!-- Customer Details Section (Initially Hidden) -->
+            <div id="customerDetailsSection" class="hidden mt-6 pt-4 border-t border-blue-300 text-gray-800">
+                <h4 class="text-base font-bold text-blue-700 mb-2">Customer Details:</h4>
+                <div class="flex items-center space-x-3 mb-2">
+                    <img id="customerPhoto" src="https://placehold.co/40x40/cccccc/ffffff?text=C" alt="Customer" class="w-10 h-10 rounded-full border-2 border-blue-400">
+                    <div>
+                        <p class="font-semibold" id="customerName">Priya Sharma</p>
+                        <p class="text-sm text-gray-600" id="customerRating">Rating: ★★★★★ (4.9)</p>
+                    </div>
+                </div>
+                <p class="text-sm">Pickup Instructions: <span class="font-normal" id="customerInstructions">Near main gate, next to the cafe.</span></p>
+                <p class="text-sm mt-1">Booking Time: <span class="font-normal" id="bookingTime">10:30 AM (2 min ago)</span></p>
+                <p class="text-sm mt-1">Payment Method: <span class="font-normal" id="paymentMethod">Online Wallet</span></p>
+
+                <!-- New: Customer Interaction Buttons -->
+                <div class="flex gap-2 mt-4">
+                    <button onclick="initiateCall();" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75">
+                        📞 Call Customer
+                    </button>
+                    <button onclick="openChatModal();" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-2 px-3 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+                        💬 Chat
+                    </button>
+                </div>
+                   <button onclick="hideRideRequest(); showMessage('Ride completed!', 'success');" class="mt-4 w-full bg-gray-800 hover:bg-black text-white py-2 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-opacity-75">
+                    Complete Ride
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Buttons -->
+        <div class="grid grid-cols-1 gap-4 text-center">
+            <button onclick="showEarnings()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-opacity-75">
+                💰 View Earnings
+            </button>
+
+            <button onclick="showPromotions()" class="bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-75">
+                🎁 Promotions & Incentives
+            </button>
+
+            <button onclick="showTripHistory()" class="bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                🛣️ Trip History
+            </button>
+
+            <button onclick="showMyProfile()" class="bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75">
+                👤 My Profile
+            </button>
+            <button onclick="showMessage('Logged out successfully!', 'info');" class="bg-gray-800 hover:bg-black text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-opacity-75">
+                🚪 Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Earnings Modal -->
+    <div id="earningsModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
+        <div class="bg-white w-11/12 max-w-lg p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeEarnings()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <h2 class="text-2xl font-bold text-emerald-700 mb-6 text-center">📊 Your Earnings Dashboard</h2>
+
+            <div class="space-y-6 text-gray-700">
+                <!-- Current Earnings Summary (Weekly) -->
+                <div class="bg-emerald-500 text-white p-5 rounded-xl shadow-md text-center">
+                    <p class="text-sm font-semibold">Total Earnings</p>
+                    <p id="totalEarningsDisplay" class="text-4xl font-bold mt-1">₹0</p>
+                    <p id="weeklyPeriodDisplay" class="text-xs mt-2">Week of --</p>
+                </div>
+
+                <!-- Key Weekly Metrics -->
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Key Weekly Metrics</h3>
+                <div class="grid grid-cols-3 gap-4 text-center text-sm font-semibold">
+                    <div class="bg-green-100 p-3 rounded-lg shadow-sm">
+                        <p id="ridesThisWeek" class="text-emerald-700 text-xl font-bold">0</p>
+                        <p class="text-gray-600">Rides</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg shadow-sm">
+                        <p id="avgRatingDisplay" class="text-emerald-700 text-xl font-bold">0.0</p>
+                        <p class="text-gray-600">Avg. Rating</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-lg shadow-sm">
+                        <p id="onlineHoursDisplay" class="text-emerald-700 text-xl font-bold">0<span class="text-lg">h</span></p>
+                        <p class="text-gray-600">Online Hours</p>
+                    </div>
+                </div>
+
+                <!-- Performance Metrics (KPI) -->
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Your Performance At A Glance</h3>
+                <div class="grid grid-cols-2 gap-4 text-center text-sm font-semibold">
+                    <div class="bg-purple-100 p-3 rounded-lg shadow-sm">
+                        <p id="acceptanceRateDisplay" class="text-purple-700 text-xl font-bold">0<span class="text-lg">%</span></p>
+                        <p class="text-gray-600">Acceptance Rate</p>
+                    </div>
+                    <div class="bg-purple-100 p-3 rounded-lg shadow-sm">
+                        <p id="completionRateDisplay" class="text-purple-700 text-xl font-bold">0<span class="text-lg">%</span></p>
+                        <p class="text-gray-600">Completion Rate</p>
+                    </div>
+                </div>
+
+                <!-- Detailed Ride History / Earnings Breakdown with Filter -->
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Detailed Ride History</h3>
+
+                <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <label for="weekFilter" class="text-sm font-medium text-gray-700">Select Week:</label>
+                    <select id="weekFilter" class="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 text-sm w-full sm:w-auto">
+                        <!-- Options will be dynamically populated by JavaScript -->
+                    </select>
+                </div>
+
+                <div id="rideHistoryContainer" class="space-y-4">
+                    <!-- Ride entries will be dynamically populated here -->
+                </div>
+
+                <!-- Weekly & Monthly Overview Call to Action -->
+                <div class="mt-6 pt-4 border-t-2 border-dashed border-gray-300 text-center">
+                    <p class="text-lg font-semibold text-gray-800">Looking for more? </p>
+                    <p class="text-sm text-gray-600 mt-1">Access your detailed weekly and monthly earnings reports, along with in-depth performance analytics, in your Trip History section!</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Promotions Modal -->
+    <div id="promotionsModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
+        <div class="bg-white w-11/12 max-w-lg p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closePromotions()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <h2 class="text-2xl font-bold text-orange-700 mb-6 text-center">🎁 Your Promotions & Incentives</h2>
+
+            <div class="space-y-6 text-gray-700">
+                <!-- Active Promotions -->
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Active Promotions</h3>
+                <div id="activePromotionsContainer" class="space-y-4">
+                    <!-- Promotions will be dynamically populated here -->
+                </div>
+
+                <!-- Completed Incentives -->
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4 mt-8">Completed Incentives</h3>
+                <div id="completedIncentivesContainer" class="space-y-4">
+                    <!-- Completed incentives will be dynamically populated here -->
+                </div>
+
+                <!-- Future Incentives / Info -->
+                <div class="mt-6 pt-4 border-t-2 border-dashed border-gray-300 text-center">
+                    <p class="text-lg font-semibold text-gray-800">Stay Tuned!</p>
+                    <p class="text-sm text-gray-600 mt-1">New promotions and exciting incentives are added regularly. Keep driving to unlock more rewards!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Profile Modal (New) -->
+    <div id="myProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
+        <div class="bg-white w-11/12 max-w-lg p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeMyProfile()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <h2 class="text-2xl font-bold text-purple-700 mb-6 text-center">My Driver Profile</h2>
+
+            <div class="space-y-6 text-gray-700">
+                <!-- Driver Info Card -->
+                <div class="bg-purple-50 p-5 rounded-xl shadow-inner flex items-center gap-4 border border-purple-200">
+                    <img id="profileModalPhoto" src="https://cdn-icons-png.flaticon.com/512/1995/1995574.png" alt="Driver" class="w-20 h-20 rounded-full border-4 border-white shadow-md">
+                    <div>
+                        <h3 id="profileModalName" class="text-xl font-bold text-gray-800">Harish Kumar</h3>
+                        <p class="text-sm text-gray-600">Driver ID: <span id="profileModalDriverId">DRV-12345</span></p>
+                        <p class="text-sm text-gray-600">Vehicle: <span id="profileModalVehicleType">Prime Sedan</span> - <span id="profileModalVehicleNo">KA 01 AB 1234</span></p>
+                        <p class="text-sm text-gray-600">Rating: <span id="profileModalRating" class="font-semibold text-yellow-500">★★★★☆ (4.7)</span></p>
+                    </div>
+                </div>
+
+                <!-- Contact Information -->
+                <div class="space-y-3">
+                    <h4 class="text-lg font-bold text-gray-800 border-b pb-2 mb-3">Contact Information</h4>
+                    <p class="flex items-center gap-3 text-sm"><span class="w-5 text-center">📞</span> Phone: <a id="profileModalPhone" href="#" class="text-purple-600 hover:underline">+91 99887 76655</a></p>
+                    <p class="flex items-center gap-3 text-sm"><span class="w-5 text-center">✉️</span> Email: <a id="profileModalEmail" href="#" class="text-purple-600 hover:underline">harish.kumar@email.com</a></p>
+                </div>
+
+                <!-- Performance Overview -->
+                <div class="space-y-3">
+                       <h4 class="text-lg font-bold text-gray-800 border-b pb-2 mb-3">Performance Overview</h4>
+                       <div class="grid grid-cols-2 gap-4">
+                           <div class="bg-green-100 p-4 rounded-lg text-center shadow-sm">
+                               <p class="text-sm text-gray-600">Lifetime Rating</p>
+                               <p id="profileModalLifetimeRating" class="text-2xl font-bold text-green-700">4.8</p>
+                           </div>
+                           <div class="bg-blue-100 p-4 rounded-lg text-center shadow-sm">
+                               <p class="text-sm text-gray-600">Total Trips</p>
+                               <p id="profileModalTotalTrips" class="text-2xl font-bold text-blue-700">1250</p>
+                           </div>
+                       </div>
+                </div>
+
+                <!-- Achievements -->
+                <div class="space-y-3">
+                       <h4 class="text-lg font-bold text-gray-800 border-b pb-2 mb-3">Achievements</h4>
+                       <div id="profileModalAchievements" class="flex justify-around items-start gap-4 p-2">
+                           <!-- Achievements will be dynamically populated here -->
+                       </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Message Box Modal (for alerts) -->
+    <div id="messageModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-[100] p-4">
+        <div class="bg-white p-6 rounded-xl shadow-lg relative max-w-sm w-11/12 text-center transform scale-95 transition-transform duration-300 ease-out">
+            <button onclick="closeMessage()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <p id="messageContent" class="text-lg text-gray-800 mb-4"></p>
+            <button id="messageOkButton" onclick="closeMessage()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-5 rounded-lg shadow-md transition-all duration-200 ease-in-out">OK</button>
+        </div>
+    </div>
+
+    <!-- Chat Modal -->
+    <div id="chatModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
+        <div class="bg-white w-11/12 max-w-md p-6 rounded-xl shadow-lg relative flex flex-col h-[80vh] sm:h-[600px]">
+            <button onclick="closeChatModal()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <h2 class="text-xl font-bold text-indigo-700 mb-4 text-center">💬 Chat with <span id="chatCustomerName">Customer</span></h2>
+
+            <!-- Chat messages display area -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 border border-gray-200 rounded-lg mb-4 bg-gray-50 flex flex-col">
+                <!-- Chat messages will be appended here -->
+            </div>
+
+            <!-- Quick Reply Buttons -->
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <button onclick="sendQuickReply('On my way!')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-2 px-3 rounded-lg transition-all duration-150">On my way!</button>
+                <button onclick="sendQuickReply('Arriving in 2 mins.')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-2 px-3 rounded-lg transition-all duration-150">Arriving in 2 mins.</button>
+                <button onclick="sendQuickReply('Facing slight traffic.')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-2 px-3 rounded-lg transition-all duration-150">Facing slight traffic.</button>
+                <button onclick="sendQuickReply('Please confirm pickup location.')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-sm py-2 px-3 rounded-lg transition-all duration-150">Confirm pickup?</button>
+            </div>
+
+            <!-- Chat input area -->
+            <div class="flex">
+                <input type="text" id="chatInput" class="flex-1 p-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Type your message...">
+                <button onclick="sendMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-5 rounded-r-lg shadow-md transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trip History Modal -->
+    <div id="tripHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
+        <div class="bg-white w-11/12 max-w-4xl p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeTripHistory()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <h2 class="text-2xl font-bold text-blue-700 mb-6 text-center">🛣️ Your Trip History</h2>
+
+            <div class="space-y-6 text-gray-700">
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Past Rides</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label for="dateRangeTripHistory" class="block text-sm font-medium text-gray-700 mb-1">Date Range:</label>
+                        <select id="dateRangeTripHistory" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" onchange="filterTrips()">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="this_week">This Week</option>
+                            <option value="last_30_days">Last 30 Days</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <input type="text" id="customDatePickerTripHistory" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 mt-2 hidden" placeholder="Select custom date range">
+                    </div>
+
+                    <div>
+                        <label for="vehicleTypeTripHistory" class="block text-sm font-medium text-gray-700 mb-1">Vehicle Type:</label>
+                        <select id="vehicleTypeTripHistory" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" onchange="filterTrips()">
+                            <option value="all">All</option>
+                            <option value="Prime Sedan">Prime Sedan</option>
+                            <option value="Bike">Bike</option>
+                            <option value="Auto">Auto</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="paymentMethodTripHistory" class="block text-sm font-medium text-gray-700 mb-1">Payment Method:</label>
+                        <select id="paymentMethodTripHistory" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" onchange="filterTrips()">
+                            <option value="all">All</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Wallet">Wallet</option>
+                        </select>
+                    </div>
+
+                    <div class="col-span-full md:col-span-1">
+                        <label for="sortByTripHistory" class="block text-sm font-medium text-gray-700 mb-1">Sort By:</label>
+                        <select id="sortByTripHistory" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" onchange="sortTrips()">
+                            <option value="date_desc">Date (Newest First)</option>
+                            <option value="date_asc">Date (Oldest First)</option>
+                            <option value="fare_desc">Fare (High to Low)</option>
+                            <option value="fare_asc">Fare (Low to High)</option>
+                            <option value="duration_desc">Duration (Long to Short)</option>
+                            <option value="duration_asc">Duration (Short to Long)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-span-full md:col-span-2">
+                        <label for="searchTripTripHistory" class="block text-sm font-medium text-gray-700 mb-1">Search Trip:</label>
+                        <input type="text" id="searchTripTripHistory" placeholder="Search by location or details..." class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" onkeyup="filterTrips()">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 mb-6">
+                    <button onclick="exportTrips('csv')" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg shadow text-sm">Export CSV</button>
+                    <button onclick="exportTrips('pdf')" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg shadow text-sm">Export PDF</button>
+                </div>
+
+                <div id="tripList" class="space-y-4">
+                </div>
+
+                <div id="noTripsMessage" class="hidden text-center text-gray-600 py-10">
+                    <p class="text-lg font-semibold">😔 No trips found for the selected criteria.</p>
+                    <p class="text-sm mt-2">Try adjusting your filters or check back later!</p>
+                </div>
+
+                <div class="mt-6 pt-4 border-t-2 border-dashed border-gray-300 text-center">
+                    <p class="text-lg font-semibold text-gray-800">Need more detailed reports?</p>
+                    <p class="text-sm text-gray-600 mt-1">Visit the 'My Profile' section for comprehensive analytics and downloadable trip logs.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JavaScript -->
+    <script>
+        // ===================================================================================
+        // DUMMY DATA
+        // ===================================================================================
+
+        // Dummy Driver Profile Data
+        const driverProfileData = {
+            name: "Harish Kumar",
+            driverId: "DRV-12345",
+            vehicleType: "Prime Sedan",
+            vehicleNo: "KA 01 AB 1234",
+            rating: "4.7",
+            ratingStars: "★★★★☆",
+            phone: "+91 99887 76655",
+            email: "harish.kumar@email.com",
+            lifetimeRating: 4.8,
+            totalTrips: 1250,
+            photoUrl: "https://cdn-icons-png.flaticon.com/512/1995/1995574.png",
+            achievements: [
+                { icon: '🏆', name: 'Top Driver' },
+                { icon: '⭐', name: '5-Star Pro' },
+                { icon: '💪', name: '1k+ Rides' },
+                { icon: '🌙', name: 'Night Owl' }
+            ]
+        };
+        
+        // Helper to get a date string for a specific day relative to today
+        function getDateString(offsetDays) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            return d.toISOString().split('T')[0]; // Format YYYY-MM-DD
+        }
+
+        // Dummy data for different weeks (existing data for Earnings modal)
+        const allRidesData = {
+            "week_current": { // Week of Jun 23 - Jun 29
+                period: "June 23 - June 29, 2025",
+                totalEarnings: 8500,
+                rides: 35,
+                avgRating: 4.8,
+                onlineHours: 42,
+                acceptanceRate: 95,
+                completionRate: 98,
+                detailedRides: [
+                    { id: 'R001', date: getDateString(0), time: '18:30', from: 'Koramangala', to: 'Indiranagar', fare: 220, duration: 25, payment: 'UPI', vehicle: 'Prime Sedan', rating: 5, customer: 'Ananya S.' },
+                    { id: 'R002', date: getDateString(0), time: '17:00', from: 'Jayanagar', to: 'Malleshwaram', fare: 310, duration: 40, payment: 'Cash', vehicle: 'Prime Sedan', rating: 4, customer: 'Rohan K.' },
+                    { id: 'R003', date: getDateString(-1), time: '09:15', from: 'Marathahalli', to: 'Domlur', fare: 250, duration: 30, payment: 'Wallet', vehicle: 'Prime Sedan', rating: 5, customer: 'Shruti V.' },
+                    { id: 'R004', date: getDateString(-1), time: '08:00', from: 'Whitefield', to: 'Electronic City', fare: 500, duration: 60, payment: 'UPI', vehicle: 'Prime Sedan', rating: 4, customer: 'Vikram R.' },
+                    { id: 'R005', date: getDateString(-2), time: '21:00', from: 'BTM Layout', to: 'HSR Layout', fare: 180, duration: 20, payment: 'Cash', vehicle: 'Bike', rating: 5, customer: 'Pooja M.' },
+                    { id: 'R006', date: getDateString(-2), time: '14:45', from: 'Shivajinagar', to: 'Hebbal', fare: 380, duration: 45, payment: 'Wallet', vehicle: 'Prime Sedan', rating: 5, customer: 'Rahul D.' },
+                    { id: 'R007', date: getDateString(-3), time: '11:20', from: 'Bannerghatta Road', to: 'Koramangala', fare: 280, duration: 35, payment: 'UPI', vehicle: 'Auto', rating: 4, customer: 'Meena P.' },
+                    { id: 'R008', date: getDateString(-3), time: '10:00', from: 'Basavanagudi', to: 'Rajajinagar', fare: 200, duration: 28, payment: 'Cash', vehicle: 'Prime Sedan', rating: 5, customer: 'Suresh L.' },
+                ]
+            },
+            "week_previous": { // Week of Jun 16 - Jun 22
+                period: "June 16 - June 22, 2025",
+                totalEarnings: 7800,
+                rides: 30,
+                avgRating: 4.7,
+                onlineHours: 38,
+                acceptanceRate: 90,
+                completionRate: 97,
+                detailedRides: [
+                    { id: 'R009', date: getDateString(-7), time: '19:00', from: 'Indiranagar', to: 'Koramangala', fare: 200, duration: 22, payment: 'UPI', vehicle: 'Prime Sedan', rating: 5, customer: 'Sameer A.' },
+                    { id: 'R010', date: getDateString(-8), time: '11:00', from: 'Malleshwaram', to: 'Jayanagar', fare: 290, duration: 38, payment: 'Cash', vehicle: 'Prime Sedan', rating: 4, customer: 'Divya R.' },
+                    { id: 'R011', date: getDateString(-9), time: '08:30', from: 'Domlur', to: 'Marathahalli', fare: 230, duration: 27, payment: 'Wallet', vehicle: 'Prime Sedan', rating: 5, customer: 'Kiran B.' },
+                ]
+            }
+        };
+
+        // Dummy Promotions Data
+        const promotionsData = {
+            active: [
+                {
+                    id: 'P001',
+                    title: 'Weekend Rush Bonus!',
+                    description: 'Complete 10 rides between Friday 6 PM and Sunday 11 PM and get an extra ₹500 bonus!',
+                    progress: { current: 7, target: 10 },
+                    expiry: 'June 30, 2025',
+                    icon: '⚡'
+                },
+                {
+                    id: 'P002',
+                    title: 'Peak Hours Multiplier',
+                    description: '2x earnings on all rides from 8 AM - 10 AM and 5 PM - 7 PM, Monday to Friday.',
+                    progress: null, // No specific progress for this type
+                    expiry: 'July 15, 2025',
+                    icon: '🚀'
+                },
+                {
+                    id: 'P003',
+                    title: 'New Driver Incentive (Advanced)',
+                    description: 'Complete 50 rides in your first month for a ₹2000 bonus. (For drivers with less than 200 total rides)',
+                    progress: { current: 40, target: 50 },
+                    expiry: 'August 31, 2025',
+                    icon: '🌟'
+                }
+            ],
+            completed: [
+                {
+                    id: 'C001',
+                    title: 'Rainy Day Surge (June 10)',
+                    description: 'Earned ₹150 extra for 3 rides during rain.',
+                    date: 'June 10, 2025',
+                    icon: '🌧️',
+                    earned: 150
+                },
+                {
+                    id: 'C002',
+                    title: 'Early Bird Bonus (Week 2)',
+                    description: '₹200 bonus for 5 early morning rides last week.',
+                    date: 'June 17, 2025',
+                    icon: '☀️',
+                    earned: 200
+                },
+                {
+                    id: 'C003',
+                    title: 'Diwali Special (Oct 2024)',
+                    description: '₹1000 bonus for consistent performance during festival.',
+                    date: 'Oct 28, 2024',
+                    icon: '🪔',
+                    earned: 1000
+                }
+            ]
+        };
+
+
+        // ===================================================================================
+        // MODAL HANDLERS (Open/Close) & General UI
+        // ===================================================================================
+
+        /**
+         * Generic function to display a custom message modal instead of alert().
+         * @param {string} message - The message to display.
+         * @param {string} type - 'success', 'error', 'info', 'warning' (for potential future styling)
+         */
+        function showMessage(message, type = 'info') {
+            const messageModal = document.getElementById('messageModal');
+            const messageContent = document.getElementById('messageContent');
+            messageContent.textContent = message;
+            // You can add type-specific styling here if needed
+            // e.g., messageContent.className = `text-lg mb-4 ${type === 'error' ? 'text-red-700' : 'text-gray-800'}`;
+            messageModal.classList.remove('hidden');
+            // Add a slight animation for opening
+            setTimeout(() => {
+                messageModal.querySelector('.max-w-sm').classList.remove('scale-95');
+                messageModal.querySelector('.max-w-sm').classList.add('scale-100');
+            }, 50);
+        }
+
+        /**
+         * Closes the generic message modal.
+         */
+        function closeMessage() {
+            const messageModal = document.getElementById('messageModal');
+            // Add a slight animation for closing
+            messageModal.querySelector('.max-w-sm').classList.remove('scale-100');
+            messageModal.querySelector('.max-w-sm').classList.add('scale-95');
+            setTimeout(() => {
+                messageModal.classList.add('hidden');
+            }, 300); // Wait for the transition to complete
+        }
+
+        /**
+         * Toggles the driver's online/offline status.
+         */
+        document.getElementById('statusSwitch').addEventListener('change', function() {
+            const statusText = document.getElementById('statusText');
+            if (this.checked) {
+                statusText.innerHTML = 'You are currently: <strong class="text-green-600">Online</strong>';
+                // Simulate new ride request after a delay when online
+                setTimeout(showNewRideRequest, 3000); // Show request after 3 seconds
+            } else {
+                statusText.innerHTML = 'You are currently: <strong class="text-red-600">Offline</strong>';
+                hideRideRequest(); // Hide any active ride requests when going offline
+                showMessage('You are now Offline. You will not receive new ride requests.', 'info');
+            }
+        });
+
+        /**
+         * Displays the new ride request section.
+         */
+        function showNewRideRequest() {
+            const newRideSection = document.getElementById('newRideSection');
+            newRideSection.classList.remove('hidden');
+            // Reset customer details if shown previously
+            document.getElementById('customerDetailsSection').classList.add('hidden');
+            document.getElementById('rideActionButtons').classList.remove('hidden'); // Show accept/decline buttons
+        }
+
+        /**
+         * Hides the new ride request section.
+         */
+        function hideRideRequest() {
+            document.getElementById('newRideSection').classList.add('hidden');
+        }
+
+        /**
+         * Handles accepting a ride, hides action buttons, and shows customer details.
+         */
+        function acceptRideAndShowCustomerDetails() {
+            document.getElementById('rideActionButtons').classList.add('hidden');
+            document.getElementById('customerDetailsSection').classList.remove('hidden');
+            showMessage('Ride accepted! Customer details are now visible.', 'success');
+        }
+
+        /**
+         * Simulates initiating a call to the customer.
+         */
+        function initiateCall() {
+            showMessage('📞 Calling customer...', 'info');
+            // In a real app, this would integrate with a telephony API
+        }
+
+        // ===================================================================================
+        // CHAT MODAL FUNCTIONS
+        // ===================================================================================
+
+        let chatHistory = []; // Stores chat messages
+
+        /**
+         * Opens the chat modal.
+         */
+        function openChatModal() {
+            document.getElementById('chatModal').classList.remove('hidden');
+            // Populate customer name in chat modal, e.g., from a currently active ride
+            document.getElementById('chatCustomerName').textContent = document.getElementById('customerName').textContent || 'Customer';
+            renderChatMessages();
+            // Scroll to the bottom of the chat
+            document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+        }
+
+        /**
+         * Closes the chat modal.
+         */
+        function closeChatModal() {
+            document.getElementById('chatModal').classList.add('hidden');
+        }
+
+        /**
+         * Renders all messages in the chat history to the UI.
+         */
+        function renderChatMessages() {
+            const chatMessagesContainer = document.getElementById('chatMessages');
+            chatMessagesContainer.innerHTML = ''; // Clear previous messages
+
+            chatHistory.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message-container ${msg.sender === 'driver' ? 'sent' : 'received'}`;
+                messageDiv.innerHTML = `
+                    <div class="chat-bubble">
+                        <p>${msg.text}</p>
+                        <span class="chat-timestamp">${msg.timestamp}</span>
+                    </div>
+                `;
+                chatMessagesContainer.appendChild(messageDiv);
+            });
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight; // Scroll to bottom
+        }
+
+        /**
+         * Sends a message typed in the input field.
+         */
+        function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const messageText = chatInput.value.trim();
+
+            if (messageText) {
+                const now = new Date();
+                const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                chatHistory.push({ sender: 'driver', text: messageText, timestamp: timestamp });
+                renderChatMessages();
+                chatInput.value = ''; // Clear input
+
+                // Simulate customer reply after a short delay
+                setTimeout(() => {
+                    const customerReplyMessages = [
+                        "Okay, thank you!",
+                        "Got it, waiting.",
+                        "Thanks for the update!",
+                        "See you soon!",
+                        "Sure, no problem."
+                    ];
+                    const randomReply = customerReplyMessages[Math.floor(Math.random() * customerReplyMessages.length)];
+                    chatHistory.push({ sender: 'customer', text: randomReply, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+                    renderChatMessages();
+                }, 1500);
+            }
+        }
+
+        /**
+         * Sends a quick reply message.
+         * @param {string} replyText - The pre-defined quick reply text.
+         */
+        function sendQuickReply(replyText) {
+            const now = new Date();
+            const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            chatHistory.push({ sender: 'driver', text: replyText, timestamp: timestamp });
+            renderChatMessages();
+
+            // Simulate customer reply after a short delay
+            setTimeout(() => {
+                const customerReplyMessages = [
+                    "Understood, thanks!",
+                    "Appreciate the heads-up.",
+                    "No worries.",
+                    "Okay, good to know."
+                ];
+                const randomReply = customerReplyMessages[Math.floor(Math.random() * customerReplyMessages.length)];
+                chatHistory.push({ sender: 'customer', text: randomReply, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+                renderChatMessages();
+            }, 1500);
+        }
+
+
+        // ===================================================================================
+        // EARNINGS MODAL FUNCTIONS
+        // ===================================================================================
+
+        /**
+         * Opens the earnings modal and populates it with data.
+         */
+        function showEarnings() {
+            document.getElementById('earningsModal').classList.remove('hidden');
+            populateEarningsModal('week_current'); // Default to current week
+            populateWeekFilter();
+        }
+
+        /**
+         * Closes the earnings modal.
+         */
+        function closeEarnings() {
+            document.getElementById('earningsModal').classList.add('hidden');
+        }
+
+        /**
+         * Populates the week filter dropdown with available weeks from dummy data.
+         */
+        function populateWeekFilter() {
+            const weekFilter = document.getElementById('weekFilter');
+            weekFilter.innerHTML = ''; // Clear existing options
+
+            for (const weekKey in allRidesData) {
+                const option = document.createElement('option');
+                option.value = weekKey;
+                option.textContent = allRidesData[weekKey].period;
+                weekFilter.appendChild(option);
+            }
+            // Set current week as selected
+            weekFilter.value = 'week_current';
+            weekFilter.onchange = (event) => populateEarningsModal(event.target.value);
+        }
+
+        /**
+         * Populates the earnings modal with data for the specified week.
+         * @param {string} weekKey - The key for the week in allRidesData (e.g., 'week_current', 'week_previous').
+         */
+        function populateEarningsModal(weekKey) {
+            const data = allRidesData[weekKey];
+            if (!data) {
+                console.error("No data found for weekKey:", weekKey);
+                return;
+            }
+
+            document.getElementById('totalEarningsDisplay').textContent = `₹${data.totalEarnings.toLocaleString('en-IN')}`;
+            document.getElementById('weeklyPeriodDisplay').textContent = `Week of ${data.period}`;
+            document.getElementById('ridesThisWeek').textContent = data.rides;
+            document.getElementById('avgRatingDisplay').textContent = data.avgRating.toFixed(1);
+            document.getElementById('onlineHoursDisplay').textContent = `${data.onlineHours}h`;
+            document.getElementById('acceptanceRateDisplay').textContent = `${data.acceptanceRate}%`;
+            document.getElementById('completionRateDisplay').textContent = `${data.completionRate}%`;
+
+            renderDetailedRideHistory(data.detailedRides);
+        }
+
+        /**
+         * Renders the detailed ride history for the selected week in the earnings modal.
+         * @param {Array<Object>} rides - An array of ride objects.
+         */
+        function renderDetailedRideHistory(rides) {
+            const container = document.getElementById('rideHistoryContainer');
+            container.innerHTML = ''; // Clear previous entries
+
+            if (rides.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-500 py-4">No rides recorded for this period.</p>';
+                return;
+            }
+
+            rides.forEach(ride => {
+                const rideCard = `
+                    <div class="ride-entry-card bg-white p-4 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                        <div class="flex-1 mb-2 sm:mb-0">
+                            <p class="text-gray-900 font-semibold text-lg">₹${ride.fare.toLocaleString('en-IN')}</p>
+                            <p class="text-sm text-gray-600">${ride.from} ➡️ ${ride.to}</p>
+                            <p class="text-xs text-gray-500 mt-1">${ride.date} at ${ride.time}</p>
+                        </div>
+                        <div class="text-right text-sm">
+                            <p class="text-gray-700">Duration: ${ride.duration} mins</p>
+                            <p class="text-gray-700">Payment: ${ride.payment}</p>
+                            <p class="text-gray-700">Customer Rating: ${'★'.repeat(ride.rating)}${'☆'.repeat(5 - ride.rating)}</p>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', rideCard);
+            });
+        }
+
+
+        // ===================================================================================
+        // PROMOTIONS MODAL FUNCTIONS
+        // ===================================================================================
+
+        /**
+         * Opens the promotions modal and populates it with data.
+         */
+        function showPromotions() {
+            document.getElementById('promotionsModal').classList.remove('hidden');
+            renderPromotions();
+        }
+
+        /**
+         * Closes the promotions modal.
+         */
+        function closePromotions() {
+            document.getElementById('promotionsModal').classList.add('hidden');
+        }
+
+        /**
+         * Renders the active and completed promotions to the UI.
+         */
+        function renderPromotions() {
+            const activeContainer = document.getElementById('activePromotionsContainer');
+            const completedContainer = document.getElementById('completedIncentivesContainer');
+            activeContainer.innerHTML = '';
+            completedContainer.innerHTML = '';
+
+            if (promotionsData.active.length === 0) {
+                activeContainer.innerHTML = '<p class="text-center text-gray-500 py-4">No active promotions currently. Check back soon!</p>';
+            } else {
+                promotionsData.active.forEach(promo => {
+                    let progressHtml = '';
+                    if (promo.progress) {
+                        const percentage = (promo.progress.current / promo.progress.target) * 100;
+                        progressHtml = `
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill" style="width: ${percentage > 100 ? 100 : percentage}%;"></div>
+                            </div>
+                            <p class="text-xs text-gray-600 mt-1">${promo.progress.current} of ${promo.progress.target} completed</p>
+                        `;
+                    }
+                    const promoCard = `
+                        <div class="bg-orange-50 p-4 rounded-xl shadow-sm border border-orange-200">
+                            <div class="flex items-start gap-3 mb-2">
+                                <span class="text-3xl">${promo.icon}</span>
+                                <div>
+                                    <h4 class="text-lg font-bold text-orange-800">${promo.title}</h4>
+                                    <p class="text-sm text-gray-700">${promo.description}</p>
+                                </div>
+                            </div>
+                            ${progressHtml}
+                            <p class="text-xs text-gray-500 mt-2">Expires: ${promo.expiry}</p>
+                        </div>
+                    `;
+                    activeContainer.insertAdjacentHTML('beforeend', promoCard);
+                });
+            }
+
+            if (promotionsData.completed.length === 0) {
+                completedContainer.innerHTML = '<p class="text-center text-gray-500 py-4">No completed incentives yet. Keep driving to earn more!</p>';
+            } else {
+                promotionsData.completed.forEach(incentive => {
+                    const incentiveCard = `
+                        <div class="bg-green-50 p-4 rounded-xl shadow-sm border border-green-200 flex items-start gap-3">
+                            <span class="text-3xl">${incentive.icon}</span>
+                            <div>
+                                <h4 class="text-lg font-bold text-green-800">${incentive.title}</h4>
+                                <p class="text-sm text-gray-700">${incentive.description}</p>
+                                <p class="text-sm text-gray-700 font-semibold mt-1">Earned: <span class="text-emerald-600">₹${incentive.earned.toLocaleString('en-IN')}</span></p>
+                                <p class="text-xs text-gray-500 mt-1">Completed on: ${incentive.date}</p>
+                            </div>
+                        </div>
+                    `;
+                    completedContainer.insertAdjacentHTML('beforeend', incentiveCard);
+                });
+            }
+        }
+
+
+        // ===================================================================================
+        // MY PROFILE MODAL FUNCTIONS
+        // ===================================================================================
+
+        /**
+         * Opens the My Profile modal and populates it with driver data.
+         */
+        function showMyProfile() {
+            document.getElementById('myProfileModal').classList.remove('hidden');
+            populateMyProfileModal();
+        }
+
+        /**
+         * Closes the My Profile modal.
+         */
+        function closeMyProfile() {
+            document.getElementById('myProfileModal').classList.add('hidden');
+        }
+
+        /**
+         * Populates the My Profile modal with driverProfileData.
+         */
+        function populateMyProfileModal() {
+            document.getElementById('profileModalPhoto').src = driverProfileData.photoUrl;
+            document.getElementById('profileModalName').textContent = driverProfileData.name;
+            document.getElementById('profileModalDriverId').textContent = driverProfileData.driverId;
+            document.getElementById('profileModalVehicleType').textContent = driverProfileData.vehicleType;
+            document.getElementById('profileModalVehicleNo').textContent = driverProfileData.vehicleNo;
+            document.getElementById('profileModalRating').textContent = `${driverProfileData.ratingStars} (${driverProfileData.rating})`;
+            document.getElementById('profileModalPhone').textContent = driverProfileData.phone;
+            document.getElementById('profileModalPhone').href = `tel:${driverProfileData.phone.replace(/\s/g, '')}`;
+            document.getElementById('profileModalEmail').textContent = driverProfileData.email;
+            document.getElementById('profileModalEmail').href = `mailto:${driverProfileData.email}`;
+            document.getElementById('profileModalLifetimeRating').textContent = driverProfileData.lifetimeRating.toFixed(1);
+            document.getElementById('profileModalTotalTrips').textContent = driverProfileData.totalTrips.toLocaleString('en-IN');
+
+            const achievementsContainer = document.getElementById('profileModalAchievements');
+            achievementsContainer.innerHTML = '';
+            driverProfileData.achievements.forEach(ach => {
+                const badge = `
+                    <div class="achievement-badge">
+                        <span>${ach.icon}</span>
+                        <p>${ach.name}</p>
+                    </div>
+                `;
+                achievementsContainer.insertAdjacentHTML('beforeend', badge);
+            });
+        }
+
+        // ===================================================================================
+        // TRIP HISTORY MODAL FUNCTIONS (Advanced Filtering/Sorting)
+        // ===================================================================================
+
+        let allTrips = []; // Master list of all trips
+        let filteredAndSortedTrips = []; // Trips currently displayed after filters/sort
+
+        /**
+         * Opens the Trip History modal and initializes it.
+         */
+        function showTripHistory() {
+            document.getElementById('tripHistoryModal').classList.remove('hidden');
+            // Consolidate all detailed rides from all weeks into one master list
+            allTrips = Object.values(allRidesData).flatMap(week => week.detailedRides);
+            allTrips.forEach(trip => {
+                trip.timestamp = new Date(`${trip.date}T${trip.time}:00`); // Add timestamp for sorting
+            });
+            initializeTripHistoryFilters();
+            filterTrips(); // Initial render
+        }
+
+        /**
+         * Closes the Trip History modal.
+         */
+        function closeTripHistory() {
+            document.getElementById('tripHistoryModal').classList.add('hidden');
+        }
+
+        /**
+         * Initializes the date picker for custom range.
+         */
+        function initializeTripHistoryFilters() {
+            const dateRangeSelect = document.getElementById('dateRangeTripHistory');
+            const customDatePicker = document.getElementById('customDatePickerTripHistory');
+
+            dateRangeSelect.addEventListener('change', () => {
+                if (dateRangeSelect.value === 'custom') {
+                    customDatePicker.classList.remove('hidden');
+                    // Initialize flatpickr for date range selection
+                    flatpickr(customDatePicker, {
+                        mode: "range",
+                        dateFormat: "Y-m-d",
+                        onChange: function(selectedDates, dateStr, instance) {
+                            filterTrips(); // Re-filter when custom dates change
+                        }
+                    });
+                } else {
+                    customDatePicker.classList.add('hidden');
+                    if (customDatePicker._flatpickr) {
+                        customDatePicker._flatpickr.destroy(); // Destroy instance if no longer needed
+                    }
+                    filterTrips(); // Re-filter for predefined ranges
+                }
+            });
+
+            // Ensure flatpickr is destroyed if already initialized on subsequent openings
+            if (customDatePicker._flatpickr) {
+                customDatePicker._flatpickr.destroy();
+            }
+            customDatePicker.classList.add('hidden'); // Hide by default
+            dateRangeSelect.value = 'all'; // Reset filter to 'All Time'
+            document.getElementById('vehicleTypeTripHistory').value = 'all';
+            document.getElementById('paymentMethodTripHistory').value = 'all';
+            document.getElementById('sortByTripHistory').value = 'date_desc';
+            document.getElementById('searchTripTripHistory').value = '';
+        }
+
+        /**
+         * Filters the trips based on selected criteria.
+         */
+        function filterTrips() {
+            let currentTrips = [...allTrips]; // Start with all trips
+
+            const dateRange = document.getElementById('dateRangeTripHistory').value;
+            const customDatesInput = document.getElementById('customDatePickerTripHistory');
+            const vehicleType = document.getElementById('vehicleTypeTripHistory').value;
+            const paymentMethod = document.getElementById('paymentMethodTripHistory').value;
+            const searchTerm = document.getElementById('searchTripTripHistory').value.toLowerCase();
+
+            // Date Range Filter
+            if (dateRange !== 'all') {
+                const now = new Date();
+                let startDate, endDate;
+
+                switch (dateRange) {
+                    case 'today':
+                        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1); // End of today
+                        break;
+                    case 'this_week':
+                        const day = now.getDay(); // 0 for Sunday, 1 for Monday
+                        startDate = new Date(now);
+                        startDate.setDate(now.getDate() - day); // Start of current week (Sunday)
+                        startDate.setHours(0, 0, 0, 0);
+                        endDate = new Date(startDate);
+                        endDate.setDate(startDate.getDate() + 7); // End of current week
+                        break;
+                    case 'last_30_days':
+                        startDate = new Date(now);
+                        startDate.setDate(now.getDate() - 30);
+                        startDate.setHours(0, 0, 0, 0);
+                        endDate = new Date(now);
+                        endDate.setDate(now.getDate() + 1); // Up to end of today
+                        break;
+                    case 'custom':
+                        if (customDatesInput._flatpickr && customDatesInput._flatpickr.selectedDates.length === 2) {
+                            startDate = customDatesInput._flatpickr.selectedDates[0];
+                            endDate = new Date(customDatesInput._flatpickr.selectedDates[1]);
+                            endDate.setDate(endDate.getDate() + 1); // Include the end date
+                        } else {
+                            currentTrips = []; // If custom range is selected but not valid, show no trips
+                        }
+                        break;
+                }
+
+                if (startDate && endDate) {
+                    currentTrips = currentTrips.filter(trip => {
+                        const tripDate = new Date(trip.date);
+                        return tripDate >= startDate && tripDate < endDate;
+                    });
+                }
+            }
+
+            // Vehicle Type Filter
+            if (vehicleType !== 'all') {
+                currentTrips = currentTrips.filter(trip => trip.vehicle === vehicleType);
+            }
+
+            // Payment Method Filter
+            if (paymentMethod !== 'all') {
+                currentTrips = currentTrips.filter(trip => trip.payment === paymentMethod);
+            }
+
+            // Search Term Filter
+            if (searchTerm) {
+                currentTrips = currentTrips.filter(trip =>
+                    trip.from.toLowerCase().includes(searchTerm) ||
+                    trip.to.toLowerCase().includes(searchTerm) ||
+                    trip.customer.toLowerCase().includes(searchTerm) ||
+                    trip.id.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            filteredAndSortedTrips = currentTrips; // Store filtered trips before sorting
+            sortTrips(); // Apply sorting after filtering
+        }
+
+        /**
+         * Sorts the currently filtered trips based on the selected sort option.
+         */
+        function sortTrips() {
+            const sortBy = document.getElementById('sortByTripHistory').value;
+
+            filteredAndSortedTrips.sort((a, b) => {
+                switch (sortBy) {
+                    case 'date_desc':
+                        return b.timestamp - a.timestamp;
+                    case 'date_asc':
+                        return a.timestamp - b.timestamp;
+                    case 'fare_desc':
+                        return b.fare - a.fare;
+                    case 'fare_asc':
+                        return a.fare - b.fare;
+                    case 'duration_desc':
+                        return b.duration - a.duration;
+                    case 'duration_asc':
+                        return a.duration - b.duration;
+                    default:
+                        return 0;
+                }
+            });
+
+            renderTripHistory(filteredAndSortedTrips);
+        }
+
+        /**
+         * Renders the filtered and sorted trips to the Trip History modal.
+         * @param {Array<Object>} trips - An array of trip objects to display.
+         */
+        function renderTripHistory(trips) {
+            const tripListContainer = document.getElementById('tripList');
+            const noTripsMessage = document.getElementById('noTripsMessage');
+            tripListContainer.innerHTML = ''; // Clear previous entries
+
+            if (trips.length === 0) {
+                noTripsMessage.classList.remove('hidden');
+                return;
+            } else {
+                noTripsMessage.classList.add('hidden');
+            }
+
+            trips.forEach(trip => {
+                const tripCard = `
+                    <div class="trip-card bg-white p-4 rounded-xl shadow-md flex flex-col sm:flex-row justify-between items-start sm:items-center border border-blue-100">
+                        <div class="flex-1 mb-2 sm:mb-0">
+                            <p class="text-lg font-semibold text-blue-800">Trip ID: ${trip.id}</p>
+                            <p class="text-gray-700 text-sm mt-1">From: <span class="font-medium">${trip.from}</span> to <span class="font-medium">${trip.to}</span></p>
+                            <p class="text-gray-600 text-xs mt-1">${trip.date} at ${trip.time} - ${trip.duration} mins</p>
+                        </div>
+                        <div class="text-right text-sm">
+                            <p class="text-green-700 font-bold text-xl">₹${trip.fare.toLocaleString('en-IN')}</p>
+                            <p class="text-gray-700">Payment: ${trip.payment}</p>
+                            <p class="text-gray-700">Vehicle: ${trip.vehicle}</p>
+                            <p class="text-gray-700">Customer: ${trip.customer} (${'★'.repeat(trip.rating)})</p>
+                        </div>
+                    </div>
+                `;
+                tripListContainer.insertAdjacentHTML('beforeend', tripCard);
+            });
+        }
+
+        /**
+         * Exports the currently filtered and sorted trips.
+         * In a real application, this would involve server-side processing for PDF.
+         * For CSV, we can generate client-side.
+         * @param {string} format - 'csv' or 'pdf'
+         */
+        function exportTrips(format) {
+            if (filteredAndSortedTrips.length === 0) {
+                showMessage('No trips to export for the current filters.', 'info');
+                return;
+            }
+
+            if (format === 'csv') {
+                let csvContent = "data:text/csv;charset=utf-8,";
+                // Add header row
+                const headers = Object.keys(filteredAndSortedTrips[0]).filter(key => key !== 'timestamp'); // Exclude timestamp from CSV
+                csvContent += headers.join(',') + '\n';
+
+                // Add data rows
+                filteredAndSortedTrips.forEach(trip => {
+                    const row = headers.map(header => {
+                        let value = trip[header];
+                        if (typeof value === 'string' && value.includes(',')) {
+                            value = `"${value}"`; // Quote strings containing commas
+                        }
+                        return value;
+                    }).join(',');
+                    csvContent += row + '\n';
+                });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement('a');
+                link.setAttribute('href', encodedUri);
+                link.setAttribute('download', 'ChakraX_TripHistory.csv');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showMessage('Trip history exported as CSV!', 'success');
+
+            } else if (format === 'pdf') {
+                showMessage('PDF export is not supported in this demo. In a real app, this would generate a PDF report.', 'info');
+                // For a real PDF export, you'd typically send data to a server-side API
+                // that generates a PDF and sends it back for download.
+                // Libraries like jsPDF or html2pdf.js could be used client-side for simpler PDFs,
+                // but they have limitations for complex layouts.
+            }
+        }
+
+
+        // Initial dashboard setup
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set driver name on dashboard
+            document.getElementById('dashboardDriverName').textContent = driverProfileData.name.split(' ')[0]; // First name
+        });
+
+    </script>
+</body>
+</html>

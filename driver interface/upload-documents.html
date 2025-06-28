@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Documents</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-md">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Upload Documents</h2>
+    <p class="text-center text-gray-600 mb-6">Upload all required documents for verification.</p>
+
+    <!-- Upload Form -->
+    <div class="space-y-6">
+      <!-- Driving License -->
+      <div>
+        <label class="block font-medium mb-1">Driving License</label>
+        <div class="border border-dashed border-gray-400 p-4 rounded-lg bg-gray-50 text-center">
+          <p class="text-sm text-gray-600 mb-2">Drag & drop or click to upload</p>
+          <input type="file" id="drivingLicenseUpload" accept="image/*" style="display: none;">
+          <button onclick="document.getElementById('drivingLicenseUpload').click();" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload License</button>
+          <img id="drivingLicenseThumbnail" class="mt-4 mx-auto hidden w-24 h-24 object-cover border rounded" />
+        </div>
+      </div>
+
+      <!-- Vehicle Registration -->
+      <div>
+        <label class="block font-medium mb-1">Vehicle Registration</label>
+        <div class="border border-dashed border-gray-400 p-4 rounded-lg bg-gray-50 text-center">
+          <p class="text-sm text-gray-600 mb-2">Drag & drop or click to upload</p>
+          <input type="file" id="vehicleRegistrationUpload" accept="image/*" style="display: none;">
+          <button onclick="document.getElementById('vehicleRegistrationUpload').click();" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload Registration</button>
+          <img id="vehicleRegistrationThumbnail" class="mt-4 mx-auto hidden w-24 h-24 object-cover border rounded" />
+        </div>
+      </div>
+
+      <!-- Insurance -->
+      <div>
+        <label class="block font-medium mb-1">Insurance Policy</label>
+        <div class="border border-dashed border-gray-400 p-4 rounded-lg bg-gray-50 text-center">
+          <p class="text-sm text-gray-600 mb-2">Drag & drop or click to upload</p>
+          <input type="file" id="insuranceUpload" accept="image/*" style="display: none;">
+          <button onclick="document.getElementById('insuranceUpload').click();" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload Insurance</button>
+          <img id="insuranceThumbnail" class="mt-4 mx-auto hidden w-24 h-24 object-cover border rounded" />
+        </div>
+      </div>
+
+      <!-- Aadhar/PAN -->
+      <div>
+        <label class="block font-medium mb-1">Aadhar/PAN Card</label>
+        <div class="border border-dashed border-gray-400 p-4 rounded-lg bg-gray-50 text-center">
+          <p class="text-sm text-gray-600 mb-2">Drag & drop or click to upload</p>
+          <input type="file" id="aadharPanUpload" accept="image/*" style="display: none;">
+          <button onclick="document.getElementById('aadharPanUpload').click();" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Upload ID Proof</button>
+          <img id="aadharPanThumbnail" class="mt-4 mx-auto hidden w-24 h-24 object-cover border rounded" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="mt-8">
+      <button id="submitDocumentsBtn" disabled class="w-full bg-emerald-500 text-white py-3 px-4 rounded-lg opacity-50 cursor-not-allowed">
+        Submit Documents
+      </button>
+      <p class="text-sm text-center text-gray-500 mt-2">*All documents must be uploaded to enable this button.</p>
+    </div>
+  </div>
+
+  <script>
+    const uploadedDocs = {
+      drivingLicense: false,
+      vehicleRegistration: false,
+      insurance: false,
+      aadharPan: false
+    };
+
+    function previewAndCheck(id, imgId, key) {
+      const input = document.getElementById(id);
+      const thumbnail = document.getElementById(imgId);
+
+      input.addEventListener("change", () => {
+        if (input.files && input.files[0]) {
+          const reader = new FileReader();
+          reader.onload = e => {
+            thumbnail.src = e.target.result;
+            thumbnail.classList.remove("hidden");
+            uploadedDocs[key] = true;
+            checkAllUploaded();
+          };
+          reader.readAsDataURL(input.files[0]);
+        }
+      });
+    }
+
+    function checkAllUploaded() {
+      const allUploaded = Object.values(uploadedDocs).every(Boolean);
+      const btn = document.getElementById("submitDocumentsBtn");
+      if (allUploaded) {
+        btn.disabled = false;
+        btn.classList.remove("opacity-50", "cursor-not-allowed");
+        btn.classList.add("hover:bg-emerald-600");
+      }
+    }
+
+    // Setup all uploads
+    previewAndCheck("drivingLicenseUpload", "drivingLicenseThumbnail", "drivingLicense");
+    previewAndCheck("vehicleRegistrationUpload", "vehicleRegistrationThumbnail", "vehicleRegistration");
+    previewAndCheck("insuranceUpload", "insuranceThumbnail", "insurance");
+    previewAndCheck("aadharPanUpload", "aadharPanThumbnail", "aadharPan");
+
+    // Final submit button action
+    document.getElementById("submitDocumentsBtn").addEventListener("click", () => {
+      alert("Documents submitted successfully! Redirecting to Dashboard...");
+      window.location.href = "dashboard.html"; // Create this page if needed
+    });
+  </script>
+</body>
+</html>
