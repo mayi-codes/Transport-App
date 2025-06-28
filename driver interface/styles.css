@@ -1,0 +1,277 @@
+/* General Body and Container Styles */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #6DD5ED 0%, #2193B0 100%); /* Blue gradient */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    color: #333;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.login-container {
+    padding: 20px;
+    width: 100%;
+    max-width: 420px; /* Optimal width for a login form */
+}
+
+.login-card {
+    background-color: #ffffff;
+    border-radius: 15px; /* Softer rounded corners */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden; /* For potential background patterns */
+}
+
+/* Pseudo-element for a subtle background pattern/texture */
+.login-card::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    right: -50px;
+    bottom: -50px;
+    background: radial-gradient(circle at center, rgba(240, 248, 255, 0.2) 0%, transparent 70%); /* Light, subtle glow */
+    z-index: 0;
+    pointer-events: none; /* Ensure it doesn't block interactions */
+}
+
+.login-card > * {
+    position: relative; /* Bring content above the pseudo-element */
+    z-index: 1;
+}
+
+/* Logo */
+.logo {
+    margin-bottom: 25px;
+}
+
+.logo img {
+    max-width: 80px; /* Adjust size as needed */
+    height: auto;
+}
+
+/* Headings and Subtitles */
+h1 {
+    font-size: 28px;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.subtitle, .otp-sent-message {
+    font-size: 15px;
+    color: #666;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.otp-sent-message {
+    margin-bottom: 20px;
+    color: #4CAF50; /* Green for success message */
+    font-weight: 500;
+}
+
+/* Input Group */
+.input-group {
+    text-align: left;
+    margin-bottom: 20px;
+    position: relative; /* For error messages */
+}
+
+.input-group label {
+    display: block;
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+input[type="tel"],
+input[type="text"] {
+    width: calc(100% - 20px); /* Account for padding */
+    padding: 12px 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px; /* Slightly more rounded */
+    font-size: 16px;
+    color: #333;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    box-sizing: border-box; /* Include padding in width */
+}
+
+input[type="tel"]:focus,
+input[type="text"]:focus {
+    border-color: #2193B0; /* Highlight on focus */
+    box-shadow: 0 0 0 3px rgba(33, 147, 176, 0.2); /* Soft glow */
+    outline: none;
+}
+
+/* OTP Specific Input Styling */
+.otp-input-group input[type="text"] {
+    letter-spacing: 15px; /* Spacing for OTP digits */
+    text-align: center;
+    font-weight: 600;
+    font-size: 20px;
+    padding-right: 15px; /* Adjust padding for letter-spacing */
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex; /* Allows for spinner alignment */
+    justify-content: center;
+    align-items: center;
+    padding: 14px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.btn-primary {
+    background-color: #2193B0; /* Brand color */
+    color: #fff;
+    margin-top: 15px;
+    box-shadow: 0 4px 10px rgba(33, 147, 176, 0.3);
+}
+
+.btn-primary:hover {
+    background-color: #1a7b93; /* Darker shade on hover */
+    transform: translateY(-2px); /* Slight lift */
+    box-shadow: 0 6px 15px rgba(33, 147, 176, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(33, 147, 176, 0.2);
+}
+
+.btn-link {
+    background: none;
+    color: #2193B0;
+    text-decoration: none;
+    padding: 0;
+    width: auto; /* Override 100% width */
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+    color: #1a7b93;
+}
+
+/* OTP Section (initially hidden) */
+.otp-section {
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 1px solid #eee; /* Separator line */
+}
+
+/* Hidden Class for JavaScript toggling */
+.hidden {
+    display: none;
+}
+
+/* Error Messages */
+.error-message {
+    color: #e74c3c;
+    font-size: 13px;
+    margin-top: 5px;
+    display: block; /* Ensures it takes up space */
+    height: 18px; /* Reserve space to prevent layout shifting */
+    text-align: left;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: none; /* Hidden by default */
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid #fff;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+.btn-primary .loading-spinner {
+    border-top: 3px solid #fff; /* White spinner on primary button */
+}
+
+/* Show spinner when button is disabled/loading */
+.btn-primary.loading .loading-spinner {
+    display: inline-block;
+}
+
+.btn-primary.loading {
+    cursor: not-allowed;
+    background-color: #5cb5ce; /* Slightly muted when loading */
+}
+
+/* Resend OTP Timer */
+.otp-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+
+.resend-timer {
+    font-size: 14px;
+    color: #888;
+}
+
+/* Privacy Text */
+.privacy-text {
+    font-size: 13px;
+    color: #888;
+    margin-top: 30px;
+}
+
+.privacy-text a {
+    color: #2193B0;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.privacy-text a:hover {
+    text-decoration: underline;
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 480px) {
+    .login-card {
+        margin: 20px;
+        padding: 30px 20px;
+    }
+
+    h1 {
+        font-size: 24px;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        font-size: 16px;
+    }
+
+    .otp-input-group input[type="text"] {
+        letter-spacing: 10px; /* Reduce spacing on smaller screens */
+    }
+}
+
+/* Keyframe for spinner animation */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

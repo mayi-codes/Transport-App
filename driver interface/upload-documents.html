@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Secure Document Upload</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Load Inter font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Apply Inter font family to the entire body */
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom styles for the message box to ensure it's hidden by default and for animation */
+    #messageBox {
+      display: none; /* Hidden by default */
+      backdrop-filter: blur(5px); /* Add a subtle blur effect to the background */
+    }
+    #messageBoxContent {
+      /* Initial state for message box animation */
+      transform: translateY(20px) scale(0.9);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* More natural transition */
+    }
+    #messageBox.active #messageBoxContent {
+      /* Final state for message box animation */
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    /* Custom style for the upload area when an image is present */
+    .has-image .upload-placeholder {
+        display: none;
+    }
+    .has-image img {
+        display: block !important;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-indigo-900 to-purple-900 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+
+  <!-- Main container for the form -->
+  <div class="max-w-xl w-full bg-white bg-opacity-98 rounded-3xl shadow-2xl p-6 sm:p-8 md:p-10 transform transition-all duration-300 hover:scale-[1.005] border border-gray-100">
+    <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 text-center tracking-tight leading-tight">
+      <span class="text-indigo-600">Secure</span> & <span class="text-purple-600">Swift</span> Document Upload
+    </h2>
+    <p class="text-base sm:text-lg text-gray-700 mb-8 text-center leading-relaxed max-w-xl mx-auto">
+      Please upload all required documents for a seamless and secure verification process to activate your account.
+    </p>
+
+    <!-- Upload Form Sections Grid -->
+    <!-- Changed to grid-cols-1 to ensure all items stack vertically, one below the other -->
+    <div class="grid grid-cols-1 gap-6 sm:gap-8">
+
+      <!-- Driving License Upload Section -->
+      <div class="upload-section bg-white rounded-2xl p-6 shadow-xl border border-gray-100 flex flex-col items-center justify-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+        <label for="drivingLicenseUpload" class="block text-xl font-bold text-gray-800 mb-4 text-center">Driving License</label>
+        <label for="drivingLicenseUpload" id="drivingLicenseUploadArea" class="relative w-full h-48 border-4 border-dashed border-indigo-400 rounded-2xl bg-indigo-50 flex flex-col items-center justify-center cursor-pointer overflow-hidden
+                    hover:border-indigo-600 hover:bg-indigo-100 transition-all duration-200 group">
+          <div class="upload-placeholder flex flex-col items-center">
+            <!-- SVG Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 text-indigo-500 mb-2 group-hover:scale-110 transition-transform">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 1.5A.75.75 0 017.5 0h9a.75.75 0 01.75.75v16.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V1.5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.875 18L10 21m.875-3l-.375.375V20.25a.75.75 0 01-.75.75H8.25a.75.75 0 01-.75-.75V18.375l-.375-.375M16.125 18H16.5m-1.875-3.375h-.375m-3.75 0h-.375m-3.75 0h-.375" />
+            </svg>
+            <p class="text-base text-gray-700 font-medium group-hover:text-indigo-700 transition-colors">Tap or Drag & Drop to Upload</p>
+          </div>
+          <input type="file" id="drivingLicenseUpload" accept="image/*, application/pdf" class="absolute inset-0 opacity-0 cursor-pointer" aria-label="Upload Driving License">
+          <!-- Thumbnail preview, initially hidden -->
+          <img id="drivingLicenseThumbnail" class="absolute inset-0 w-full h-full object-cover rounded-xl p-1 hidden" alt="Driving License Thumbnail" />
+        </label>
+      </div>
+
+      <!-- Vehicle Registration Upload Section -->
+      <div class="upload-section bg-white rounded-2xl p-6 shadow-xl border border-gray-100 flex flex-col items-center justify-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+        <label for="vehicleRegistrationUpload" class="block text-xl font-bold text-gray-800 mb-4 text-center">Vehicle Registration</label>
+        <label for="vehicleRegistrationUpload" id="vehicleRegistrationUploadArea" class="relative w-full h-48 border-4 border-dashed border-emerald-400 rounded-2xl bg-emerald-50 flex flex-col items-center justify-center cursor-pointer overflow-hidden
+                    hover:border-emerald-600 hover:bg-emerald-100 transition-all duration-200 group">
+          <div class="upload-placeholder flex flex-col items-center">
+            <!-- SVG Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 text-emerald-500 mb-2 group-hover:scale-110 transition-transform">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.979-2.204 1.243-.111 2.472 1.011 2.525 2.267.025.502.106 1.002.26 1.488L9.526 17.29c-.611 1.023-.815 2.174-.6 3.342.422 2.356 2.052 3.893 3.864 3.893 1.085 0 2.22-.387 2.9-.997M21.75 9c-1.396 0-2.25 1.002-2.25 2.25v2.25c0 1.248.892 2.25 2.25 2.25m-15 0h11.25m-9-3h7.5" />
+            </svg>
+            <p class="text-base text-gray-700 font-medium group-hover:text-emerald-700 transition-colors">Tap or Drag & Drop to Upload</p>
+          </div>
+          <input type="file" id="vehicleRegistrationUpload" accept="image/*, application/pdf" class="absolute inset-0 opacity-0 cursor-pointer" aria-label="Upload Vehicle Registration">
+          <!-- Thumbnail preview, initially hidden -->
+          <img id="vehicleRegistrationThumbnail" class="absolute inset-0 w-full h-full object-cover rounded-xl p-1 hidden" alt="Vehicle Registration Thumbnail" />
+        </label>
+      </div>
+
+      <!-- Insurance Policy Upload Section -->
+      <div class="upload-section bg-white rounded-2xl p-6 shadow-xl border border-gray-100 flex flex-col items-center justify-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+        <label for="insuranceUpload" class="block text-xl font-bold text-gray-800 mb-4 text-center">Insurance Policy</label>
+        <label for="insuranceUpload" id="insuranceUploadArea" class="relative w-full h-48 border-4 border-dashed border-amber-400 rounded-2xl bg-amber-50 flex flex-col items-center justify-center cursor-pointer overflow-hidden
+                    hover:border-amber-600 hover:bg-amber-100 transition-all duration-200 group">
+          <div class="upload-placeholder flex flex-col items-center">
+            <!-- SVG Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 text-amber-500 mb-2 group-hover:scale-110 transition-transform">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15c2.25 0 2.25-2.25 2.25-2.25V6.75c0-1.036-1.015-1.747-1.015-1.747H4.5A2.25 2.25 0 002.25 6.75v10.5a2.25 2.25 0 002.25 2.25zm0 0H2.25V6.75a2.25 2.25 0 012.25-2.25h15.75c1.036 0 1.747 1.015 1.747 1.015L21.75 6.75V17.25c0-1.036-1.015-1.747-1.015-1.747L19.5 17.25V6.75" />
+            </svg>
+            <p class="text-base text-gray-700 font-medium group-hover:text-amber-700 transition-colors">Tap or Drag & Drop to Upload</p>
+          </div>
+          <input type="file" id="insuranceUpload" accept="image/*, application/pdf" class="absolute inset-0 opacity-0 cursor-pointer" aria-label="Upload Insurance Policy">
+          <!-- Thumbnail preview, initially hidden -->
+          <img id="insuranceThumbnail" class="absolute inset-0 w-full h-full object-cover rounded-xl p-1 hidden" alt="Insurance Policy Thumbnail" />
+        </label>
+      </div>
+
+      <!-- Aadhar/PAN Card Upload Section -->
+      <div class="upload-section bg-white rounded-2xl p-6 shadow-xl border border-gray-100 flex flex-col items-center justify-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+        <label for="aadharPanUpload" class="block text-xl font-bold text-gray-800 mb-4 text-center">Aadhar/PAN Card</label>
+        <label for="aadharPanUpload" id="aadharPanUploadArea" class="relative w-full h-48 border-4 border-dashed border-rose-400 rounded-2xl bg-rose-50 flex flex-col items-center justify-center cursor-pointer overflow-hidden
+                    hover:border-rose-600 hover:bg-rose-100 transition-all duration-200 group">
+          <div class="upload-placeholder flex flex-col items-center">
+            <!-- SVG Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-14 h-14 text-rose-500 mb-2 group-hover:scale-110 transition-transform">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21.75A2.25 2.25 0 0118 24H6a2.25 2.25 0 01-2.25-2.25V5.507c0-1.108.806-2.057 1.907-2.185a48.2 48.2 0 0111.41-1.353 48.2 48.2 0 01.074.004zM21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 0a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5zM12 15a6.75 6.75 0 100-13.5 6.75 6.75 0 000 13.5z" />
+            </svg>
+            <p class="text-base text-gray-700 font-medium group-hover:text-rose-700 transition-colors">Tap or Drag & Drop to Upload</p>
+          </div>
+          <input type="file" id="aadharPanUpload" accept="image/*, application/pdf" class="absolute inset-0 opacity-0 cursor-pointer" aria-label="Upload Aadhar/PAN Card">
+          <!-- Thumbnail preview, initially hidden -->
+          <img id="aadharPanThumbnail" class="absolute inset-0 w-full h-full object-cover rounded-xl p-1 hidden" alt="Aadhar/PAN Thumbnail" />
+        </label>
+      </div>
+
+    </div>
+
+    <!-- Submit Button -->
+    <div class="mt-10 text-center">
+      <button id="submitDocumentsBtn" disabled
+              class="w-full sm:w-2/3 md:w-1/2 lg:w-2/5 px-8 py-4 rounded-full font-bold text-xl text-white
+                     bg-gradient-to-r from-teal-500 to-green-600 shadow-xl
+                     opacity-50 cursor-not-allowed transform transition-all duration-300
+                     hover:from-teal-600 hover:to-green-700 hover:scale-105 hover:shadow-2xl
+                     focus:outline-none focus:ring-4 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-white">
+        Submit Documents
+      </button>
+      <p class="text-sm text-gray-500 mt-4">*All documents (image or PDF) must be uploaded to enable the submit button.</p>
+    </div>
+  </div>
+
+  <!-- Custom Message Box/Modal -->
+  <div id="messageBox" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center" id="messageBoxContent">
+      <div class="flex flex-col items-center mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 text-green-500 mb-3 animate-bounce">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="text-2xl font-bold text-gray-800">Success!</h3>
+      </div>
+      <p class="text-gray-700 mb-6 text-lg">Your documents have been submitted successfully. You will now be redirected to the dashboard.</p>
+      <button id="messageBoxCloseBtn" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold text-lg hover:bg-indigo-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+        OK
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Object to track the upload status of each document
+    const uploadedDocs = {
+      drivingLicense: false,
+      vehicleRegistration: false,
+      insurance: false,
+      aadharPan: false
+    };
+
+    /**
+     * Handles file input change events, previews the selected image, and updates upload status.
+     * @param {string} inputId The ID of the file input element.
+     * @param {string} thumbnailId The ID of the image thumbnail element.
+     * @param {string} docKey The key in the uploadedDocs object to update.
+     * @param {string} uploadAreaId The ID of the upload area label element.
+     */
+    function previewAndCheck(inputId, thumbnailId, docKey, uploadAreaId) {
+      const input = document.getElementById(inputId);
+      const thumbnail = document.getElementById(thumbnailId);
+      const uploadArea = document.getElementById(uploadAreaId); // Get the upload area label
+
+      input.addEventListener("change", () => {
+        if (input.files && input.files[0]) {
+          const file = input.files[0];
+          const reader = new FileReader();
+
+          reader.onload = e => {
+            thumbnail.src = e.target.result;
+            thumbnail.classList.remove("hidden");
+            uploadArea.classList.add("has-image"); // Add class to hide placeholder and show image
+            uploadedDocs[docKey] = true;
+            checkAllUploaded();
+          };
+          reader.readAsDataURL(file);
+        } else {
+          thumbnail.src = "";
+          thumbnail.classList.add("hidden");
+          uploadArea.classList.remove("has-image"); // Remove class to show placeholder
+          uploadedDocs[docKey] = false;
+          checkAllUploaded();
+        }
+      });
+    }
+
+    /**
+     * Checks if all required documents have been uploaded and updates the submit button state.
+     */
+    function checkAllUploaded() {
+      const allUploaded = Object.values(uploadedDocs).every(Boolean);
+      const submitBtn = document.getElementById("submitDocumentsBtn");
+
+      if (allUploaded) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        submitBtn.classList.add("hover:from-teal-600", "hover:to-green-700", "hover:scale-105", "hover:shadow-2xl");
+      } else {
+        submitBtn.disabled = true;
+        submitBtn.classList.add("opacity-50", "cursor-not-allowed");
+        submitBtn.classList.remove("hover:from-teal-600", "hover:to-green-700", "hover:scale-105", "hover:shadow-2xl");
+      }
+    }
+
+    /**
+     * Displays the custom message box/modal with animation.
+     */
+    function showMessageBox() {
+      const messageBox = document.getElementById("messageBox");
+      messageBox.style.display = "flex";
+      requestAnimationFrame(() => {
+        messageBox.classList.add("active");
+      });
+    }
+
+    /**
+     * Hides the custom message box/modal with animation.
+     */
+    function hideMessageBox() {
+      const messageBox = document.getElementById("messageBox");
+      messageBox.classList.remove("active");
+      setTimeout(() => {
+        messageBox.style.display = "none";
+      }, 300);
+    }
+
+    // Initialize all upload sections by attaching event listeners
+    // Pass the ID of the outer label (upload area) to the previewAndCheck function
+    previewAndCheck("drivingLicenseUpload", "drivingLicenseThumbnail", "drivingLicense", "drivingLicenseUploadArea");
+    previewAndCheck("vehicleRegistrationUpload", "vehicleRegistrationThumbnail", "vehicleRegistration", "vehicleRegistrationUploadArea");
+    previewAndCheck("insuranceUpload", "insuranceThumbnail", "insurance", "insuranceUploadArea");
+    previewAndCheck("aadharPanUpload", "aadharPanThumbnail", "aadharPan", "aadharPanUploadArea");
+
+    // Add event listener for the main submit button
+    document.getElementById("submitDocumentsBtn").addEventListener("click", () => {
+      showMessageBox();
+    });
+
+    // Add event listener for the message box close button
+    document.getElementById("messageBoxCloseBtn").addEventListener("click", () => {
+      hideMessageBox();
+      window.location.href = "dashboard.html";
+    });
+
+    // Optional: Hide the message box if clicked outside (on the overlay)
+    document.getElementById("messageBox").addEventListener("click", (event) => {
+      if (event.target.id === "messageBox") {
+        hideMessageBox();
+        window.location.href = "dashboard.html";
+      }
+    });
+
+  </script>
+</body>
+</html>

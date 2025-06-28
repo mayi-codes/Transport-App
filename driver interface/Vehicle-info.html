@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vehicle Information</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Load Inter font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Apply Inter font family to the entire body */
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    /* Custom styles for the message box to ensure it's hidden by default and for animation */
+    #messageBox {
+      display: none; /* Hidden by default */
+      backdrop-filter: blur(5px); /* Add a subtle blur effect to the background */
+    }
+    #messageBoxContent {
+      /* Initial state for message box animation */
+      transform: translateY(20px) scale(0.9);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* More natural transition */
+    }
+    #messageBox.active #messageBoxContent {
+      /* Final state for message box animation */
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-indigo-900 to-purple-900 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+
+  <!-- Main container for the form -->
+  <div class="max-w-md w-full bg-white bg-opacity-98 rounded-3xl shadow-2xl p-6 sm:p-8 md:p-10 transform transition-all duration-300 hover:scale-[1.005] border border-gray-100">
+    <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 text-center tracking-tight leading-tight">
+      <span class="text-indigo-600">Vehicle</span> <span class="text-purple-600">Details</span>
+    </h2>
+    <p class="text-base sm:text-lg text-gray-700 mb-8 text-center leading-relaxed max-w-xl mx-auto">
+      Please provide your vehicle's information accurately for seamless service.
+    </p>
+
+    <!-- Vehicle Details Form -->
+    <form id="vehicleDetailsForm" class="space-y-6">
+      <!-- Vehicle Brand -->
+      <div class="form-group relative">
+        <label for="vehicleMake" class="block text-base font-medium text-gray-700 mb-2">Brand</label>
+        <div class="relative">
+          <input type="text" id="vehicleMake" name="vehicleMake" placeholder="e.g., Maruti Suzuki"
+                 class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200" required>
+          <!-- SVG Icon for Brand/Make -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375M21.75 12a9 9 0 11-18 0 9 9 0 0118 0zM18.75 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3 0h6m-9 0H3.375" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Vehicle Model -->
+      <div class="form-group relative">
+        <label for="vehicleModel" class="block text-base font-medium text-gray-700 mb-2">Model</label>
+        <div class="relative">
+          <input type="text" id="vehicleModel" name="vehicleModel" placeholder="e.g., Swift Dzire"
+                 class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200" required>
+          <!-- SVG Icon for Model -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.979-2.204 1.243-.111 2.472 1.011 2.525 2.267.025.502.106 1.002.26 1.488L9.526 17.29c-.611 1.023-.815 2.174-.6 3.342.422 2.356 2.052 3.893 3.864 3.893 1.085 0 2.22-.387 2.9-.997M21.75 9c-1.396 0-2.25 1.002-2.25 2.25v2.25c0 1.248.892 2.25 2.25 2.25m-15 0h11.25m-9-3h7.5" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- License Plate -->
+      <div class="form-group relative">
+        <label for="licensePlate" class="block text-base font-medium text-gray-700 mb-2">License Plate</label>
+        <div class="relative">
+          <input type="text" id="licensePlate" name="licensePlate" placeholder="e.g., KA 01 AB 1234"
+                 class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200" required>
+          <!-- SVG Icon for License Plate -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.076 60.076 0 0115.798 2.101c.727.198 1.453-.342 1.453-1.079V12.257a3.75 3.75 0 00-1.023-2.508l-9.875-9.875a3.75 3.75 0 00-2.508-1.023H2.25zM12 21L6 15V3.75M12 21v-7.5" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Vehicle Color -->
+      <div class="form-group relative">
+        <label for="vehicleColor" class="block text-base font-medium text-gray-700 mb-2">Color</label>
+        <div class="relative">
+          <input type="text" id="vehicleColor" name="vehicleColor" placeholder="e.g., White"
+                 class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all duration-200" required>
+          <!-- SVG Icon for Color -->
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.124A2.25 2.25 0 012.25 18c0 .828.746 1.5 1.667 1.5h1.964c.257 0 .598.058.904.154a2.25 2.25 0 002.046 1.182h.375M13.5 16.875H12m-.004-.75l.004.75a3 3 0 00-5.78 1.124.75.75 0 01-.172.494l-.148.148A.75.75 0 019 19.5h1.5a.75.75 0 01.598.254 2.25 2.25 0 002.046 1.182h.375M18 19.5h-1.5a.75.75 0 00-.598.254 2.25 2.25 0 01-2.046 1.182h-.375M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="mt-8">
+        <button type="submit"
+                class="w-full px-8 py-4 rounded-full font-bold text-xl text-white
+                       bg-gradient-to-r from-teal-500 to-green-600 shadow-xl
+                       transform transition-all duration-300
+                       hover:from-teal-600 hover:to-green-700 hover:scale-105 hover:shadow-2xl
+                       focus:outline-none focus:ring-4 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-white">
+          Submit Vehicle Details
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Custom Message Box/Modal -->
+  <div id="messageBox" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-2xl p-6 sm:p-8 max-w-sm w-full text-center" id="messageBoxContent">
+      <div class="flex flex-col items-center mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-16 h-16 text-green-500 mb-3 animate-bounce">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="text-2xl font-bold text-gray-800">Success!</h3>
+      </div>
+      <p class="text-gray-700 mb-6 text-lg">Vehicle details submitted successfully. Proceeding to document upload.</p>
+      <button id="messageBoxCloseBtn" class="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold text-lg hover:bg-indigo-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+        Continue
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Displays the custom message box/modal with animation.
+     */
+    function showMessageBox() {
+      const messageBox = document.getElementById("messageBox");
+      messageBox.style.display = "flex";
+      requestAnimationFrame(() => {
+        messageBox.classList.add("active");
+      });
+    }
+
+    /**
+     * Hides the custom message box/modal with animation.
+     */
+    function hideMessageBox() {
+      const messageBox = document.getElementById("messageBox");
+      messageBox.classList.remove("active");
+      setTimeout(() => {
+        messageBox.style.display = "none";
+      }, 300);
+    }
+
+    // Add event listener for the form submission
+    document.getElementById("vehicleDetailsForm").addEventListener("submit", function(e) {
+      e.preventDefault(); // Prevent default form submission
+      showMessageBox(); // Show the custom success message
+    });
+
+    // Add event listener for the message box close button
+    document.getElementById("messageBoxCloseBtn").addEventListener("click", () => {
+      hideMessageBox(); // Hide the message box
+      window.location.href = "upload-documents.html"; // Redirect to the next page
+    });
+
+    // Optional: Hide the message box if clicked outside (on the overlay)
+    document.getElementById("messageBox").addEventListener("click", (event) => {
+      if (event.target.id === "messageBox") {
+        hideMessageBox();
+        window.location.href = "upload-documents.html";
+      }
+    });
+  </script>
+</body>
+</html>
