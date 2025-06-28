@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Driver Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <style>
         /* Custom font-family for consistency */
         body {
@@ -82,6 +84,14 @@
             height: 100%;
             border-radius: 9999px; /* rounded-full */
             transition: width 0.5s ease-in-out;
+        }
+        /* Custom styles for trip cards */
+        .trip-card {
+            transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+        }
+        .trip-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         }
     </style>
 </head>
@@ -169,7 +179,7 @@
                 🎁 Promotions & Incentives
             </button>
 
-            <button onclick="showMessage('Trip history coming soon!', 'info')" class="bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+            <button onclick="showTripHistory()" class="bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
                 🛣️ Trip History
             </button>
 
@@ -278,7 +288,7 @@
         </div>
     </div>
 
-    <!-- Message Box Modal -->
+    <!-- Message Box Modal (for alerts) -->
     <div id="messageModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-[100] p-4">
         <div class="bg-white p-6 rounded-xl shadow-lg relative max-w-sm w-11/12 text-center transform scale-100 transition-transform duration-300 ease-out">
             <button onclick="closeMessage()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
@@ -316,9 +326,98 @@
         </div>
     </div>
 
+    <!-- Trip History Modal (New, integrated from trip-history-page) -->
+    <div id="tripHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center hidden z-50 p-4">
+        <div class="bg-white w-11/12 max-w-4xl p-6 rounded-xl shadow-lg relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeTripHistory()" class="absolute top-3 right-3 text-gray-600 hover:text-black text-xl font-bold">&times;</button>
+            <h2 class="text-2xl font-bold text-blue-700 mb-6 text-center">🛣️ Your Trip History</h2>
+
+            <div class="space-y-6 text-gray-700">
+                <h3 class="text-lg font-bold text-gray-800 border-b pb-2 mb-4">Past Rides</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label for="dateRangeTripHistory" class="block text-sm font-medium text-gray-700 mb-1">Date Range:</label>
+                        <select id="dateRangeTripHistory" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" onchange="filterTrips()">
+                            <option value="all">All Time</option>
+                            <option value="today">Today</option>
+                            <option value="this_week">This Week</option>
+                            <option value="last_30_days">Last 30 Days</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                        <input type="text" id="customDatePickerTripHistory" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 mt-2 hidden" placeholder="Select custom date range">
+                    </div>
+
+                    <div>
+                        <label for="vehicleTypeTripHistory" class="block text-sm font-medium text-gray-700 mb-1">Vehicle Type:</label>
+                        <select id="vehicleTypeTripHistory" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" onchange="filterTrips()">
+                            <option value="all">All</option>
+                            <option value="Prime Sedan">Prime Sedan</option>
+                            <option value="Bike">Bike</option>
+                            <option value="Auto">Auto</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="paymentMethodTripHistory" class="block text-sm font-medium text-gray-700 mb-1">Payment Method:</label>
+                        <select id="paymentMethodTripHistory" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" onchange="filterTrips()">
+                            <option value="all">All</option>
+                            <option value="UPI">UPI</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Wallet">Wallet</option>
+                        </select>
+                    </div>
+
+                    <div class="col-span-full md:col-span-1">
+                        <label for="sortByTripHistory" class="block text-sm font-medium text-gray-700 mb-1">Sort By:</label>
+                        <select id="sortByTripHistory" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" onchange="sortTrips()">
+                            <option value="date_desc">Date (Newest First)</option>
+                            <option value="date_asc">Date (Oldest First)</option>
+                            <option value="fare_desc">Fare (High to Low)</option>
+                            <option value="fare_asc">Fare (Low to High)</option>
+                            <option value="duration_desc">Duration (Long to Short)</option>
+                            <option value="duration_asc">Duration (Short to Long)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-span-full md:col-span-2">
+                        <label for="searchTripTripHistory" class="block text-sm font-medium text-gray-700 mb-1">Search Trip:</label>
+                        <input type="text" id="searchTripTripHistory" placeholder="Search by location or details..." class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" onkeyup="filterTrips()">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 mb-6">
+                    <button onclick="exportTrips('csv')" class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg shadow text-sm">Export CSV</button>
+                    <button onclick="exportTrips('pdf')" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg shadow text-sm">Export PDF</button>
+                </div>
+
+                <div id="tripList" class="space-y-4">
+                </div>
+
+                <div id="noTripsMessage" class="hidden text-center text-gray-600 py-10">
+                    <p class="text-lg font-semibold">😔 No trips found for the selected criteria.</p>
+                    <p class="text-sm mt-2">Try adjusting your filters or check back later!</p>
+                </div>
+
+                <div class="mt-6 pt-4 border-t-2 border-dashed border-gray-300 text-center">
+                    <p class="text-lg font-semibold text-gray-800">Need more detailed reports?</p>
+                    <p class="text-sm text-gray-600 mt-1">Visit the 'My Profile' section for comprehensive analytics and downloadable trip logs.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- JavaScript -->
     <script>
-        // Dummy data for different weeks (existing data)
+        // Helper to get a date string for a specific day relative to today
+        function getDateString(offsetDays) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            return d.toISOString().split('T')[0]; // Format YYYY-MM-DD
+        }
+
+        // Dummy data for different weeks (existing data for Earnings modal)
         const allRidesData = {
             "week_current": { // Week of Jun 17 - Jun 23
                 period: 'Jun 17 - Jun 23',
@@ -329,13 +428,13 @@
                 acceptanceRate: 95,
                 completionRate: 98,
                 trips: [
-                    { date: '19 Jun 2025', rating: '★★★★★', cost: '₹180', pickup: 'Indiranagar', drop: 'Koramangala', feedback: '"Friendly!"' },
-                    { date: '19 Jun 2025', rating: '★★★★☆', cost: '₹250', pickup: 'Jayanagar', drop: 'Electronic City', feedback: '"Good driver"' },
-                    { date: '18 Jun 2025', rating: '★★★★★', cost: '₹120', pickup: 'Whitefield', drop: 'Marathahalli', feedback: '"Smooth ride"' },
-                    { date: '18 Jun 2025', rating: '★★★☆☆', cost: '₹90', pickup: 'Domlur', drop: 'Shivajinagar', feedback: '"A bit slow"' },
-                    { date: '17 Jun 2025', rating: '★★★★☆', cost: '₹300', pickup: 'HSR Layout', drop: 'MG Road', feedback: '"Pleasant"' },
-                    { date: '17 Jun 2025', rating: '★★★★★', cost: '₹150', pickup: 'BTM Layout', drop: 'Bannerghatta Road', feedback: '"Excellent!"' },
-                    { date: '17 Jun 2025', rating: '★★★★☆', cost: '₹100', pickup: 'JP Nagar', drop: 'Kanakapura Road', feedback: '"Quick ride"' }
+                    { rideId: 'TRP001', customerName: 'Ravi K.', date: '19 Jun 2025', rating: '★★★★★', cost: '₹180', pickup: 'Indiranagar', drop: 'Koramangala', feedback: '"Friendly!"' },
+                    { rideId: 'TRP002', customerName: 'Priya S.', date: '19 Jun 2025', rating: '★★★★☆', cost: '₹250', pickup: 'Jayanagar', drop: 'Electronic City', feedback: '"Good driver"' },
+                    { rideId: 'TRP003', customerName: 'Amit V.', date: '18 Jun 2025', rating: '★★★★★', cost: '₹120', pickup: 'Whitefield', drop: 'Marathahalli', feedback: '"Smooth ride"' },
+                    { rideId: 'TRP004', customerName: 'Deepa M.', date: '18 Jun 2025', rating: '★★★☆☆', cost: '₹90', pickup: 'Domlur', drop: 'Shivajinagar', feedback: '"A bit slow"' },
+                    { rideId: 'TRP005', customerName: 'Rahul G.', date: '17 Jun 2025', rating: '★★★★☆', cost: '₹300', pickup: 'HSR Layout', drop: 'MG Road', feedback: '"Pleasant"' },
+                    { rideId: 'TRP006', customerName: 'Sonia P.', date: '17 Jun 2025', rating: '★★★★★', cost: '₹150', pickup: 'BTM Layout', drop: 'Bannerghatta Road', feedback: '"Excellent!"' },
+                    { rideId: 'TRP007', customerName: 'Vikram C.', date: '17 Jun 2025', rating: '★★★★☆', cost: '₹100', pickup: 'JP Nagar', drop: 'Kanakapura Road', feedback: '"Quick ride"' }
                 ]
             },
             "week_last": { // Week of Jun 10 - Jun 16
@@ -347,11 +446,11 @@
                 acceptanceRate: 92,
                 completionRate: 96,
                 trips: [
-                    { date: '16 Jun 2025', rating: '★★★★★', cost: '₹200', pickup: 'MG Road', drop: 'Whitefield', feedback: '"Fantastic service!"' },
-                    { date: '15 Jun 2025', rating: '★★★★☆', cost: '₹170', pickup: 'Koramangala', drop: 'Kalyan Nagar', feedback: '"Comfortable"' },
-                    { date: '14 Jun 2025', rating: '★★★★☆', cost: '₹110', pickup: 'Electronic City', drop: 'Domlur', feedback: '"Smooth pickup"' },
-                    { date: '13 Jun 2025', rating: '★★★★★', cost: '₹280', pickup: 'Marathahalli', drop: 'Airport', feedback: '"Very efficient"' },
-                    { date: '12 Jun 2025', rating: '★★★☆☆', cost: '₹95', pickup: 'Shivajinagar', drop: 'Richmond Road', feedback: '"Average"' }
+                    { rideId: 'TRP008', customerName: 'Neha K.', date: '16 Jun 2025', rating: '★★★★★', cost: '₹200', pickup: 'MG Road', drop: 'Whitefield', feedback: '"Fantastic service!"' },
+                    { rideId: 'TRP009', customerName: 'Arjun S.', date: '15 Jun 2025', rating: '★★★★☆', cost: '₹170', pickup: 'Koramangala', drop: 'Kalyan Nagar', feedback: '"Comfortable"' },
+                    { rideId: 'TRP010', customerName: 'Pooja R.', date: '14 Jun 2025', rating: '★★★★☆', cost: '₹110', pickup: 'Electronic City', drop: 'Domlur', feedback: '"Smooth pickup"' },
+                    { rideId: 'TRP011', customerName: 'Ganesh L.', date: '13 Jun 2025', rating: '★★★★★', cost: '₹280', pickup: 'Marathahalli', drop: 'Airport', feedback: '"Very efficient"' },
+                    { rideId: 'TRP012', customerName: 'Kavita B.', date: '12 Jun 2025', rating: '★★★☆☆', cost: '₹95', pickup: 'Shivajinagar', drop: 'Richmond Road', feedback: '"Average"' }
                 ]
             },
             "week_two_weeks_ago": { // Week of Jun 03 - Jun 09
@@ -363,9 +462,9 @@
                 acceptanceRate: 90,
                 completionRate: 95,
                 trips: [
-                    { date: '09 Jun 2025', rating: '★★★★★', cost: '₹160', pickup: 'Jayanagar', drop: 'Bannerghatta Road', feedback: '"Polite driver"' },
-                    { date: '08 Jun 2025', rating: '★★★★☆', cost: '₹220', pickup: 'Indiranagar', drop: 'HSR Layout', feedback: '"Good route knowledge"' },
-                    { date: '07 Jun 2025', rating: '★★★★☆', cost: '₹100', pickup: 'Koramangala', drop: 'BTM Layout', feedback: '"Fast ride"' }
+                    { rideId: 'TRP013', customerName: 'Rajesh N.', date: '09 Jun 2025', rating: '★★★★★', cost: '₹160', pickup: 'Jayanagar', drop: 'Bannerghatta Road', feedback: '"Polite driver"' },
+                    { rideId: 'TRP014', customerName: 'Anjali D.', date: '08 Jun 2025', rating: '★★★★☆', cost: '₹220', pickup: 'Indiranagar', drop: 'HSR Layout', feedback: '"Good route knowledge"' },
+                    { rideId: 'TRP015', customerName: 'Suresh R.', date: '07 Jun 2025', rating: '★★★★☆', cost: '₹100', pickup: 'Koramangala', drop: 'BTM Layout', feedback: '"Fast ride"' }
                 ]
             }
         };
@@ -453,11 +552,11 @@
             customerDetailsSection.classList.add("hidden");
         }
 
-        // Message Box Functions
+        // Message Box Functions (Common for all modals/pages)
         const messageModal = document.getElementById("messageModal");
         const messageContent = document.getElementById("messageContent");
 
-        function showMessage(message, type = 'info') { // Added 'type' parameter for future styling if needed
+        function showMessage(message, type = 'info') {
             messageContent.textContent = message;
             messageModal.classList.remove("hidden");
             // Add a slight transform for a pop-in effect
@@ -469,7 +568,8 @@
             messageModal.classList.add("hidden");
             // Special handling for logout: redirect after closing message
             if (messageContent.textContent === 'Logged out successfully!') {
-                window.location.href = "index.html"; // Redirect to login page, replace with actual login path if different
+                // In a real app, this would redirect to a login page, e.g., window.location.href = "login.html";
+                console.log("Logged out. (Simulated redirect)");
             }
         }
 
@@ -489,12 +589,10 @@
             customerDetailsSection.classList.remove("hidden");
         }
 
-        // --- New: Customer Interaction Functions ---
+        // --- Customer Interaction Functions ---
 
         // Phone Call Function
         function initiateCall() {
-            // In a real application, this would integrate with a telephony API or dialer.
-            // For now, we simulate it with a message.
             showMessage(`Calling ${dummyCustomer.name} at ${dummyCustomer.phoneNumber}...`, 'info');
         }
 
@@ -553,225 +651,512 @@
 
             const bubbleElement = document.createElement('div');
             bubbleElement.classList.add('chat-bubble', sender === 'driver' ? 'sent' : 'received');
-            bubbleElement.innerHTML = `
-                <p class="text-sm">${message}</p>
-                <span class="chat-timestamp">${timestamp}</span>
-            `;
+            bubbleElement.textContent = message;
 
-            messageContainer.appendChild(bubbleElement); // Only append the bubble
+            const timestampElement = document.createElement('div');
+            timestampElement.classList.add('chat-timestamp');
+            timestampElement.textContent = timestamp;
+
+            if (sender === 'driver') {
+                messageContainer.appendChild(bubbleElement);
+                messageContainer.appendChild(timestampElement);
+            } else {
+                messageContainer.appendChild(bubbleElement);
+                messageContainer.appendChild(timestampElement);
+            }
 
             chatMessages.appendChild(messageContainer);
-            chatMessages.scrollTop = chatMessages.scrollHeight; // Keep scrolled to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to latest message
         }
 
         // Function to send a message
         function sendMessage() {
-            const messageText = chatInput.value.trim();
-            if (messageText) {
+            const message = chatInput.value.trim();
+            if (message) {
                 const now = new Date();
-                const timestamp = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                appendChatMessage(messageText, 'driver', timestamp); // Add driver's message
-
-                chatHistory.push({ sender: 'driver', message: messageText, timestamp: timestamp }); // Add to history
-
-                chatInput.value = ''; // Clear input
+                const time = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                chatHistory.push({ sender: 'driver', message: message, timestamp: time });
+                appendChatMessage(message, 'driver', time);
+                chatInput.value = '';
 
                 // Simulate a customer response after a short delay
                 setTimeout(() => {
-                    // Randomly select a customer response
-                    const randomIndex = Math.floor(Math.random() * customerResponses.length);
-                    const customerResponse = customerResponses[randomIndex];
-
-                    const responseTimestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    appendChatMessage(customerResponse, 'customer', responseTimestamp);
-                    chatHistory.push({ sender: 'customer', message: customerResponse, timestamp: responseTimestamp });
-                }, 1500);
+                    const randomResponse = customerResponses[Math.floor(Math.random() * customerResponses.length)];
+                    const customerTime = new Date();
+                    const customerTimeFormatted = customerTime.getHours().toString().padStart(2, '0') + ':' + customerTime.getMinutes().toString().padStart(2, '0');
+                    chatHistory.push({ sender: 'customer', message: randomResponse, timestamp: customerTimeFormatted });
+                    appendChatMessage(randomResponse, 'customer', customerTimeFormatted);
+                }, 1500); // Customer replies after 1.5 seconds
+            } else {
+                showMessage("Please type a message to send.", "warning");
             }
         }
 
-        // Function to send quick reply
-        function sendQuickReply(replyText) {
-            chatInput.value = replyText; // Pre-fill input
-            sendMessage(); // Send the message
+        // Function for quick replies
+        function sendQuickReply(reply) {
+            chatInput.value = reply;
+            sendMessage(); // Send the quick reply as a regular message
         }
 
-        // Allow sending message with Enter key
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault(); // Prevent new line
+        // Ensure the chat input sends message on Enter key press
+        chatInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
                 sendMessage();
             }
         });
 
-        // --- End of New Functions ---
 
-        // Earnings Modal Specifics
+        // Earnings Modal Functions
         const earningsModal = document.getElementById("earningsModal");
-        const totalEarningsDisplay = document.getElementById('totalEarningsDisplay');
-        const weeklyPeriodDisplay = document.getElementById('weeklyPeriodDisplay');
-        const ridesThisWeek = document.getElementById('ridesThisWeek');
-        const avgRatingDisplay = document.getElementById('avgRatingDisplay');
-        const onlineHoursDisplay = document.getElementById('onlineHoursDisplay');
-        const acceptanceRateDisplay = document.getElementById('acceptanceRateDisplay');
-        const completionRateDisplay = document.getElementById('completionRateDisplay');
-        const weekFilter = document.getElementById('weekFilter');
-        const rideHistoryContainer = document.getElementById('rideHistoryContainer');
+        const weekFilter = document.getElementById("weekFilter");
 
-        // Function to update the earnings display based on selected week
-        function updateEarningsDisplay(weekData) {
-            totalEarningsDisplay.textContent = weekData.totalEarnings;
-            weeklyPeriodDisplay.textContent = `Week of ${weekData.period}`;
-            ridesThisWeek.textContent = weekData.rides;
-            avgRatingDisplay.textContent = weekData.avgRating.toFixed(1);
-            onlineHoursDisplay.innerHTML = `${weekData.onlineHours}<span class="text-lg">h</span>`;
-            acceptanceRateDisplay.innerHTML = `${weekData.acceptanceRate}<span class="text-lg">%</span>`;
-            completionRateDisplay.innerHTML = `${weekData.completionRate}<span class="text-lg">%</span>`;
-        }
-
-        // Function to populate ride history
-        function populateRideHistory(trips) {
-            rideHistoryContainer.innerHTML = ''; // Clear previous entries
-            if (trips && trips.length > 0) {
-                trips.forEach(trip => {
-                    const rideCard = `
-                        <div class="bg-white p-4 rounded-lg shadow-sm ride-entry-card">
-                            <div class="flex justify-between items-center text-sm mb-2">
-                                <span class="text-gray-600">${trip.date}</span>
-                                <span class="font-semibold text-green-700">${trip.cost}</span>
-                            </div>
-                            <p class="text-sm text-gray-800"><span class="font-semibold">From:</span> ${trip.pickup}</p>
-                            <p class="text-sm text-gray-800"><span class="font-semibold">To:</span> ${trip.drop}</p>
-                            <div class="flex justify-between items-center text-xs mt-2">
-                                <span class="text-yellow-500">${trip.rating}</span>
-                                <span class="text-gray-500 italic">${trip.feedback}</span>
-                            </div>
-                        </div>
-                    `;
-                    rideHistoryContainer.insertAdjacentHTML('beforeend', rideCard);
-                });
-            } else {
-                rideHistoryContainer.innerHTML = '<p class="text-center text-gray-500">No rides recorded for this week.</p>';
-            }
-        }
-
-        // Function to populate the week filter dropdown
-        function populateWeekFilter() {
-            // Clear existing options first
-            weekFilter.innerHTML = '';
-            for (const key in allRidesData) {
-                const option = document.createElement('option');
-                option.value = key;
-                option.textContent = `Week of ${allRidesData[key].period}`;
-                weekFilter.appendChild(option);
-            }
-            // Set the current week as default
-            weekFilter.value = 'week_current';
-        }
-
-        // Event listener for week filter change
-        weekFilter.addEventListener('change', (event) => {
-            const selectedWeekKey = event.target.value;
-            const selectedWeekData = allRidesData[selectedWeekKey];
-            if (selectedWeekData) {
-                updateEarningsDisplay(selectedWeekData);
-                populateRideHistory(selectedWeekData.trips);
-            }
-        });
-
-        // Function to show earnings modal
         function showEarnings() {
-            populateWeekFilter(); // Populate dropdown whenever modal is opened
-            const currentWeekData = allRidesData['week_current'];
-            updateEarningsDisplay(currentWeekData);
-            populateRideHistory(currentWeekData.trips);
             earningsModal.classList.remove("hidden");
+            // Populate week filter options
+            populateWeekFilterOptions(weekFilter, allRidesData, 'week_current');
+            // Display initial earnings for the current week
+            updateEarningsDisplay('week_current');
         }
 
-        // Function to close earnings modal
         function closeEarnings() {
             earningsModal.classList.add("hidden");
         }
 
-        // --- Promotions Modal Functions ---
-        const promotionsModal = document.getElementById("promotionsModal");
-        const activePromotionsContainer = document.getElementById("activePromotionsContainer");
-        const completedIncentivesContainer = document.getElementById("completedIncentivesContainer");
+        weekFilter.addEventListener('change', (event) => {
+            const selectedWeek = event.target.value;
+            updateEarningsDisplay(selectedWeek);
+        });
 
-        function populatePromotions() {
-            activePromotionsContainer.innerHTML = '';
-            if (promotionsData.active.length > 0) {
-                promotionsData.active.forEach(promo => {
-                    let progressBarHtml = '';
-                    if (promo.progress) {
-                        const [current, total] = promo.progress.split('/').map(Number);
-                        const percentage = (current / total) * 100;
-                        progressBarHtml = `
-                            <div class="progress-bar-container">
-                                <div class="progress-bar-fill" style="width: ${percentage}%"></div>
-                            </div>
-                            <p class="text-xs text-blue-600 mt-1 font-semibold">${current}/${total} rides completed</p>
-                        `;
-                    }
+        function updateEarningsDisplay(weekKey) {
+            const data = allRidesData[weekKey];
+            if (!data) return;
 
-                    const promoCard = `
-                        <div class="bg-gradient-to-br from-orange-50 to-orange-100 p-5 rounded-xl shadow-md border border-orange-300">
-                            <div class="flex items-center mb-2">
-                                <span class="text-3xl mr-3">${promo.icon}</span>
-                                <h4 class="text-xl font-bold text-orange-800">${promo.title}</h4>
-                            </div>
-                            <p class="text-sm text-gray-700 leading-snug">${promo.description}</p>
-                            ${progressBarHtml}
-                            <div class="flex justify-between items-center text-xs mt-3 pt-2 border-t border-orange-200">
-                                <span class="text-gray-600">Status: <span class="font-semibold text-orange-700">${promo.status}</span></span>
-                                <span class="text-gray-600">Validity: ${promo.validity}</span>
-                            </div>
-                        </div>
-                    `;
-                    activePromotionsContainer.insertAdjacentHTML('beforeend', promoCard);
-                });
-            } else {
-                activePromotionsContainer.innerHTML = '<p class="text-center text-gray-500 py-4">No active promotions currently. Check back soon!</p>';
-            }
+            document.getElementById('totalEarningsDisplay').textContent = data.totalEarnings;
+            document.getElementById('weeklyPeriodDisplay').textContent = `Week of ${data.period}`;
+            document.getElementById('ridesThisWeek').textContent = data.rides;
+            document.getElementById('avgRatingDisplay').textContent = data.avgRating.toFixed(1);
+            document.getElementById('onlineHoursDisplay').textContent = `${data.onlineHours}h`;
+            document.getElementById('acceptanceRateDisplay').textContent = `${data.acceptanceRate}%`;
+            document.getElementById('completionRateDisplay').textContent = `${data.completionRate}%`;
 
-            completedIncentivesContainer.innerHTML = '';
-            if (promotionsData.completed.length > 0) {
-                promotionsData.completed.forEach(incentive => {
-                    const incentiveCard = `
-                        <div class="bg-gradient-to-br from-green-50 to-green-100 p-5 rounded-xl shadow-md border border-green-300">
-                            <div class="flex items-center mb-2">
-                                <span class="text-3xl mr-3">${incentive.icon}</span>
-                                <h4 class="text-xl font-bold text-green-800">${incentive.title}</h4>
-                            </div>
-                            <p class="text-sm text-gray-700 leading-snug">${incentive.description}</p>
-                            <div class="flex justify-between items-center text-xs mt-3 pt-2 border-t border-green-200">
-                                <span class="text-gray-600">Date: <span class="font-semibold">${incentive.date}</span></span>
-                                <span class="text-gray-600">Earned: <span class="font-bold text-green-700">${incentive.earnings}</span></span>
-                            </div>
-                        </div>
-                    `;
-                    completedIncentivesContainer.insertAdjacentHTML('beforeend', incentiveCard);
-                });
-            } else {
-                completedIncentivesContainer.innerHTML = '<p class="text-center text-gray-500 py-4">No completed incentives yet. Keep driving to earn more!</p>';
-            }
+            populateRideHistory(data.trips);
         }
 
+        function populateRideHistory(trips) {
+            const rideHistoryContainer = document.getElementById('rideHistoryContainer');
+            rideHistoryContainer.innerHTML = ''; // Clear previous entries
+
+            if (trips.length === 0) {
+                rideHistoryContainer.innerHTML = '<p class="text-gray-600 text-center py-4">No rides recorded for this period.</p>';
+                return;
+            }
+
+            trips.forEach(trip => {
+                const card = document.createElement('div');
+                card.classList.add('ride-entry-card', 'bg-white', 'p-4', 'rounded-lg', 'shadow-sm', 'border', 'border-gray-200');
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-sm mb-2">
+                        <span class="font-semibold text-gray-800">${trip.date}</span>
+                        <span class="text-green-600 font-bold text-lg">${trip.cost}</span>
+                    </div>
+                    <p class="text-gray-700 text-sm mb-1">
+                        <span class="font-medium">From:</span> ${trip.pickup}
+                    </p>
+                    <p class="text-gray-700 text-sm mb-1">
+                        <span class="font-medium">To:</span> ${trip.drop}
+                    </p>
+                    <div class="flex items-center text-xs text-gray-500 mt-2">
+                        <span class="mr-2">${trip.rating}</span>
+                        <span class="italic">${trip.feedback}</span>
+                    </div>
+                `;
+                rideHistoryContainer.appendChild(card);
+            });
+        }
+
+        // Promotions Modal Functions
+        const promotionsModal = document.getElementById("promotionsModal");
+
         function showPromotions() {
-            populatePromotions();
             promotionsModal.classList.remove("hidden");
+            populatePromotions();
         }
 
         function closePromotions() {
             promotionsModal.classList.add("hidden");
         }
-        // --- End Promotions Modal Functions ---
 
-        // Initialize dashboard driver name
-        document.addEventListener("DOMContentLoaded", () => {
-            const driverName = "Rajesh"; // Replace with actual driver name if available from backend
-            document.getElementById("dashboardDriverName").textContent = driverName;
+        function populatePromotions() {
+            const activeContainer = document.getElementById('activePromotionsContainer');
+            const completedContainer = document.getElementById('completedIncentivesContainer');
+            activeContainer.innerHTML = '';
+            completedContainer.innerHTML = '';
+
+            if (promotionsData.active.length === 0) {
+                activeContainer.innerHTML = '<p class="text-gray-600 text-center py-4">No active promotions currently. Check back soon!</p>';
+            } else {
+                promotionsData.active.forEach(promo => {
+                    const progressHtml = promo.progress ?
+                        `<div class="progress-bar-container">
+                            <div class="progress-bar-fill" style="width: ${(parseInt(promo.progress.split('/')[0]) / parseInt(promo.progress.split('/')[1])) * 100}%;"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">${promo.progress} completed</p>` : '';
+
+                    const promoCard = document.createElement('div');
+                    promoCard.classList.add('bg-orange-50', 'p-4', 'rounded-lg', 'shadow-sm', 'border', 'border-orange-200');
+                    promoCard.innerHTML = `
+                        <div class="flex items-center mb-2">
+                            <span class="text-2xl mr-3">${promo.icon}</span>
+                            <div>
+                                <h4 class="font-bold text-orange-800">${promo.title}</h4>
+                                <p class="text-sm text-gray-700">${promo.description}</p>
+                            </div>
+                        </div>
+                        ${progressHtml}
+                        <p class="text-xs text-gray-500 mt-2"><span class="font-semibold">Status:</span> ${promo.status}</p>
+                        <p class="text-xs text-gray-500"><span class="font-semibold">Validity:</span> ${promo.validity}</p>
+                    `;
+                    activeContainer.appendChild(promoCard);
+                });
+            }
+
+            if (promotionsData.completed.length === 0) {
+                completedContainer.innerHTML = '<p class="text-gray-600 text-center py-4">No completed incentives yet.</p>';
+            } else {
+                promotionsData.completed.forEach(incentive => {
+                    const incentiveCard = document.createElement('div');
+                    incentiveCard.classList.add('bg-green-50', 'p-4', 'rounded-lg', 'shadow-sm', 'border', 'border-green-200');
+                    incentiveCard.innerHTML = `
+                        <div class="flex items-center mb-2">
+                            <span class="text-2xl mr-3">${incentive.icon}</span>
+                            <div>
+                                <h4 class="font-bold text-green-800">${incentive.title}</h4>
+                                <p class="text-sm text-gray-700">${incentive.description}</p>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-gray-500 mt-2">
+                            <span>Date: ${incentive.date}</span>
+                            <span class="font-bold text-green-700">Earned: ${incentive.earnings}</span>
+                        </div>
+                    `;
+                    completedContainer.appendChild(incentiveCard);
+                });
+            }
+        }
+
+
+        // Generic function to populate week filter options
+        function populateWeekFilterOptions(selectElement, data, defaultKey) {
+            selectElement.innerHTML = ''; // Clear existing options
+            Object.keys(data).forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `Week of ${data[key].period}`;
+                if (key === defaultKey) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+        }
+
+        // *******************************************************************
+        // NEW: Trip History Modal Integration (from trip-history-page)
+        // *******************************************************************
+
+        const tripHistoryModal = document.getElementById("tripHistoryModal");
+        // Renamed IDs to avoid conflict with earnings modal if both used the same filter/sort IDs
+        const dateRangeTripHistorySelect = document.getElementById('dateRangeTripHistory');
+        const customDatePickerTripHistory = document.getElementById('customDatePickerTripHistory');
+        const vehicleTypeTripHistorySelect = document.getElementById('vehicleTypeTripHistory');
+        const paymentMethodTripHistorySelect = document.getElementById('paymentMethodTripHistory');
+        const sortByTripHistorySelect = document.getElementById('sortByTripHistory');
+        const searchTripTripHistoryInput = document.getElementById('searchTripTripHistory');
+
+        const tripList = document.getElementById('tripList');
+        const noTripsMessage = document.getElementById('noTripsMessage');
+
+        // Dummy trip data for the Trip History Modal (simplified, as "driver" for self-trips is redundant)
+        const tripData = [
+            {
+                id: 1, pickup: 'MG Road', drop: 'Indiranagar', date: getDateString(0), time: '10:30 AM',
+                fare: 250, duration: 24, vehicle: 'Prime Sedan', payment: 'UPI'
+            },
+            {
+                id: 2, pickup: 'Koramangala', drop: 'Electronic City', date: getDateString(-1), time: '05:00 PM',
+                fare: 420, duration: 45, vehicle: 'Bike', payment: 'Cash'
+            },
+            {
+                id: 3, pickup: 'Jayanagar', drop: 'Shivajinagar', date: getDateString(-2), time: '09:15 AM',
+                fare: 180, duration: 18, vehicle: 'Auto', payment: 'Wallet'
+            },
+            {
+                id: 4, pickup: 'Marathahalli', drop: 'Whitefield', date: getDateString(-3), time: '02:00 PM',
+                fare: 300, duration: 30, vehicle: 'Prime Sedan', payment: 'UPI'
+            },
+            {
+                id: 5, pickup: 'Hebbal', drop: 'Airport', date: getDateString(-8), time: '06:00 AM',
+                fare: 800, duration: 60, vehicle: 'Prime Sedan', payment: 'Wallet'
+            },
+            {
+                id: 6, pickup: 'Banashankari', drop: 'Basavanagudi', date: getDateString(-20), time: '11:00 AM',
+                fare: 120, duration: 15, vehicle: 'Auto', payment: 'Cash'
+            }
+        ];
+
+        let flatpickrInstanceTripHistory; // Separate instance for trip history modal
+
+        function showTripHistory() {
+            tripHistoryModal.classList.remove("hidden");
+            // Initialize Flatpickr only when custom is selected
+            if (dateRangeTripHistorySelect.value === 'custom') {
+                initFlatpickrTripHistory();
+            } else {
+                if (flatpickrInstanceTripHistory) {
+                    flatpickrInstanceTripHistory.destroy();
+                    customDatePickerTripHistory.value = '';
+                }
+            }
+            filterTrips(); // Render trips based on initial filters
+        }
+
+        function closeTripHistory() {
+            tripHistoryModal.classList.add("hidden");
+        }
+
+        // Initialize Flatpickr for custom date range within the trip history modal
+        function initFlatpickrTripHistory() {
+            if (flatpickrInstanceTripHistory) {
+                flatpickrInstanceTripHistory.destroy();
+            }
+            flatpickrInstanceTripHistory = flatpickr(customDatePickerTripHistory, {
+                mode: "range",
+                dateFormat: "Y-m-d",
+                onChange: function(selectedDates, dateStr, instance) {
+                    if (selectedDates.length === 2) {
+                        filterTrips();
+                    }
+                }
+            });
+        }
+
+        dateRangeTripHistorySelect.addEventListener('change', () => {
+            if (dateRangeTripHistorySelect.value === 'custom') {
+                customDatePickerTripHistory.classList.remove('hidden');
+                initFlatpickrTripHistory();
+            } else {
+                customDatePickerTripHistory.classList.add('hidden');
+                if (flatpickrInstanceTripHistory) {
+                    flatpickrInstanceTripHistory.destroy();
+                    customDatePickerTripHistory.value = '';
+                }
+            }
+            filterTrips();
         });
 
+        vehicleTypeTripHistorySelect.addEventListener('change', filterTrips);
+        paymentMethodTripHistorySelect.addEventListener('change', filterTrips);
+        sortByTripHistorySelect.addEventListener('change', sortTrips);
+        searchTripTripHistoryInput.addEventListener('keyup', filterTrips);
+
+
+        function renderTrips(tripsToDisplay) {
+            tripList.innerHTML = '';
+            if (tripsToDisplay.length === 0) {
+                noTripsMessage.classList.remove('hidden');
+            } else {
+                noTripsMessage.classList.add('hidden');
+                tripsToDisplay.forEach(trip => {
+                    const tripCard = `
+                        <div class="trip-card bg-white p-4 rounded-xl shadow-md border border-gray-200 cursor-pointer hover:shadow-lg transition-shadow duration-200" onclick="showMessage('Viewing details for Trip ID: ${trip.id}')">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                                <p class="font-semibold text-gray-800">📍 Pickup: ${trip.pickup} <br> 🏁 Drop: ${trip.drop}</p>
+                                <p class="text-sm text-gray-600 mt-1 sm:mt-0">🗓 ${new Date(trip.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} | 🕒 ${trip.time}</p>
+                            </div>
+                            <div class="flex items-center justify-between text-sm text-gray-700 mb-2">
+                                <p>💸 Fare: <span class="font-bold text-emerald-700">₹${trip.fare}</span></p>
+                                <p>⏱ Duration: ${trip.duration} mins</p>
+                            </div>
+                            <div class="flex items-center justify-between text-sm text-gray-700">
+                                <p>${getVehicleIcon(trip.vehicle)} Mode: ${trip.vehicle} <span class="ml-2">💳 ${trip.payment}</span></p>
+                                <button class="bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs py-1 px-3 rounded-full">View Receipt</button>
+                            </div>
+                            <!-- Removed driver/rating as it's the current driver's own history -->
+                        </div>
+                    `;
+                    tripList.insertAdjacentHTML('beforeend', tripCard);
+                });
+            }
+        }
+
+        function getVehicleIcon(vehicleType) {
+            switch (vehicleType) {
+                case 'Bike': return '🏍';
+                case 'Auto': return '🛺';
+                case 'Prime Sedan': return '🚗';
+                default: return '';
+            }
+        }
+
+        function filterTrips() {
+            let filtered = [...tripData];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset time for comparison
+            const oneWeekAgo = new Date(today);
+            oneWeekAgo.setDate(today.getDate() - 7);
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+
+            // Date Range Filter
+            const selectedDateRange = dateRangeTripHistorySelect.value;
+            if (selectedDateRange !== 'all') {
+                filtered = filtered.filter(trip => {
+                    const tripDate = new Date(trip.date);
+                    tripDate.setHours(0, 0, 0, 0);
+
+                    if (selectedDateRange === 'today') {
+                        return tripDate.getTime() === today.getTime();
+                    } else if (selectedDateRange === 'this_week') {
+                        return tripDate >= oneWeekAgo && tripDate <= today;
+                    } else if (selectedDateRange === 'last_30_days') {
+                        return tripDate >= thirtyDaysAgo && tripDate <= today;
+                    } else if (selectedDateRange === 'custom') {
+                        const dateRangeValue = customDatePickerTripHistory.value;
+                        if (dateRangeValue) {
+                            const [startDateStr, endDateStr] = dateRangeValue.split(' to ');
+                            if (startDateStr && endDateStr) {
+                                const startDate = new Date(startDateStr);
+                                const endDate = new Date(endDateStr);
+                                startDate.setHours(0,0,0,0);
+                                endDate.setHours(23,59,59,999); // Include full end day
+                                return tripDate >= startDate && tripDate <= endDate;
+                            }
+                        }
+                        return true; // If custom range is selected but not set, show all
+                    }
+                    return true;
+                });
+            }
+
+            // Vehicle Type Filter
+            const selectedVehicleType = vehicleTypeTripHistorySelect.value;
+            if (selectedVehicleType !== 'all') {
+                filtered = filtered.filter(trip => trip.vehicle === selectedVehicleType);
+            }
+
+            // Payment Method Filter
+            const selectedPaymentMethod = paymentMethodTripHistorySelect.value;
+            if (selectedPaymentMethod !== 'all') {
+                filtered = filtered.filter(trip => trip.payment === selectedPaymentMethod);
+            }
+
+            // Search Filter
+            const searchTerm = searchTripTripHistoryInput.value.toLowerCase();
+            if (searchTerm) {
+                filtered = filtered.filter(trip =>
+                    trip.pickup.toLowerCase().includes(searchTerm) ||
+                    trip.drop.toLowerCase().includes(searchTerm) ||
+                    trip.vehicle.toLowerCase().includes(searchTerm) ||
+                    trip.payment.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            sortTrips(filtered); // Sort after filtering
+        }
+
+        function sortTrips(filteredTrips = null) {
+            const tripsToSort = filteredTrips || [...tripData];
+            const sortBy = sortByTripHistorySelect.value;
+
+            tripsToSort.sort((a, b) => {
+                if (sortBy === 'date_desc') {
+                    return new Date(b.date) - new Date(a.date);
+                } else if (sortBy === 'date_asc') {
+                    return new Date(a.date) - new Date(b.date);
+                } else if (sortBy === 'fare_desc') {
+                    return b.fare - a.fare;
+                } else if (sortBy === 'fare_asc') {
+                    return a.fare - b.fare;
+                } else if (sortBy === 'duration_desc') {
+                    return b.duration - a.duration;
+                } else if (sortBy === 'duration_asc') {
+                    return a.duration - b.duration;
+                }
+                return 0;
+            });
+            renderTrips(tripsToSort);
+        }
+
+        function exportTrips(format) {
+            const tripsToExport = Array.from(tripList.children).map(card => {
+                const pickupDropElement = card.querySelector('.font-semibold');
+                const pickup = pickupDropElement ? pickupDropElement.innerHTML.split('<br>')[0].replace('📍 Pickup: ', '').trim() : 'N/A';
+                const drop = pickupDropElement ? pickupDropElement.innerHTML.split('<br>')[1].replace('🏁 Drop: ', '').trim() : 'N/A';
+
+                const dateTimeElement = card.querySelector('.text-sm.text-gray-600');
+                const date = dateTimeElement ? dateTimeElement.innerText.split(' | ')[0].replace('🗓 ', '').trim() : 'N/A';
+                const time = dateTimeElement ? dateTimeElement.innerText.split(' | ')[1].replace('🕒 ', '').trim() : 'N/A';
+
+                const fareElement = card.querySelector('.font-bold.text-emerald-700');
+                const fare = fareElement ? fareElement.innerText.replace('₹', '').trim() : 'N/A';
+
+                const durationElement = card.querySelector('p:nth-child(2)'); // Assuming it's the second paragraph within the fare/duration div
+                const duration = durationElement ? durationElement.innerText.replace('⏱ Duration: ', '').replace(' mins', '').trim() : 'N/A';
+
+                const vehiclePaymentElement = card.querySelector('.flex.items-center.justify-between.text-sm.text-gray-700 p');
+                const vehicleMatch = vehiclePaymentElement ? vehiclePaymentElement.innerText.match(/Mode: (.*?) 💳/) : null;
+                const vehicle = vehicleMatch && vehicleMatch[1] ? vehicleMatch[1].trim() : 'N/A';
+
+                const paymentMatch = vehiclePaymentElement ? vehiclePaymentElement.innerText.match(/💳 (.*)/) : null;
+                const payment = paymentMatch && paymentMatch[1] ? paymentMatch[1].trim() : 'N/A';
+
+                const tripIdMatch = card.getAttribute('onclick').match(/Trip ID: (\d+)/);
+                const tripId = tripIdMatch ? tripIdMatch[1] : 'N/A';
+
+                return {
+                    'Trip ID': tripId,
+                    'Pickup Location': pickup,
+                    'Drop Location': drop,
+                    'Date': date,
+                    'Time': time,
+                    'Fare Earned (₹)': fare,
+                    'Trip Duration (mins)': duration,
+                    'Vehicle Type': vehicle,
+                    'Payment Mode': payment,
+                };
+            });
+
+            if (tripsToExport.length === 0) {
+                showMessage('No trips to export!', 'info');
+                return;
+            }
+
+            if (format === 'csv') {
+                const header = Object.keys(tripsToExport[0]).join(',');
+                const rows = tripsToExport.map(row => Object.values(row).map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')).join('\n'); // Handle commas and quotes in data
+                const csvContent = "data:text/csv;charset=utf-8," + header + "\n" + rows;
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "trip_history.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                showMessage('Trips exported to CSV!', 'success');
+            } else if (format === 'pdf') {
+                showMessage('PDF export functionality is not yet implemented. Please use CSV export for now.', 'info');
+            }
+        }
+
+        // Initial calls when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('dashboardDriverName').textContent = 'Prabhu'; // Set a default driver name
+            // Make sure the ride request section is hidden on load unless specifically triggered
+            newRideSection.classList.add("hidden");
+            customerDetailsSection.classList.add("hidden");
+
+            // Initial render for the main dashboard's earnings history
+            updateEarningsDisplay('week_current');
+        });
     </script>
 </body>
 </html>
