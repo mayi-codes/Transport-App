@@ -676,6 +676,18 @@
   <label for="pincode" class="block text-sm font-medium text-gray-700 mb-1">Pincode<span class="text-red-500">*</span></label>
   <input type="text" id="pincode" name="pincode" placeholder="e.g., 560001" maxlength="6" class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm" required>
 </div>
+<div class="flex items-center mb-4 mt-6">
+  <input
+    id="sameAsCurrent"
+    type="checkbox"
+    class="h-4 w-4 text-indigo-600 border-gray-300 rounded"
+    onchange="copyAddress(this)"
+  />
+  <label for="sameAsCurrent" class="ml-2 block text-sm text-gray-700">
+    Same as Current Address
+  </label>
+</div>
+
 
 
 <!-- 🏠 Permanent Address Section -->
@@ -1120,6 +1132,30 @@
                 showSuccessAlert('You are now Offline.');
             }
         });
+        
+function copyAddress(checkbox) {
+  if (checkbox.checked) {
+    // Copy values
+    document.getElementById('houseNo').value = document.getElementById('currentHouseNo').value;
+    document.getElementById('landmark').value = document.getElementById('currentLandmark').value;
+    document.getElementById('locality').value = document.getElementById('currentLocality').value;
+    document.getElementById('city').value = document.getElementById('currentCity').value;
+    document.getElementsByName('district')[1].value = document.getElementsByName('district')[0].value;
+    document.getElementsByName('state')[1].value = document.getElementsByName('state')[0].value;
+    document.getElementsByName('pincode')[1].value = document.getElementsByName('pincode')[0].value;
+  } else {
+    // Clear values
+    document.getElementById('houseNo').value = '';
+    document.getElementById('landmark').value = '';
+    document.getElementById('locality').value = '';
+    document.getElementById('city').value = '';
+    document.getElementsByName('district')[1].value = '';
+    document.getElementsByName('state')[1].value = '';
+    document.getElementsByName('pincode')[1].value = '';
+  }
+}
+
+
 
         // Initial screen load (ensures login screen is active on page load)
         document.addEventListener('DOMContentLoaded', () => {
