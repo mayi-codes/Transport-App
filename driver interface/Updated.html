@@ -20,6 +20,22 @@
             background-color: #f9fafb; /* Changed from #f3f4f6 to a lighter gray (Tailwind bg-gray-50) */
             padding: 1rem; /* Add some padding around the app container */
         }
+        .preview-container {
+      width: 120px;
+      height: 120px;
+      border: 1px solid #ccc;
+      border-radius: 50%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f0f0;
+    }
+    .preview-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
         /* Main application container */
         .app-container {
@@ -511,6 +527,15 @@
                             required
                         >
                     </div>
+                    
+                    
+
+
+
+
+
+
+                    
 
                     <div>
                         <button
@@ -741,6 +766,14 @@
     <!-- Add more countries as needed -->
   </select>
 </div>
+<div class="preview-container">
+    <img id="profilePreview" src="" alt="Preview" style="display:none;">
+    <span id="profilePlaceholder">No Image</span>
+  </div>
+  <br>
+  <input type="file" id="profilePicture" accept="image/*">
+  <br><br>
+  <button onclick="savePicture()">Save Profile Picture</button>
 
                     <a
                         href="vehicle-info.html"
@@ -875,6 +908,32 @@
         function hideAlert() {
             document.getElementById('messageBox').classList.add('hidden');
         }
+        
+
+
+        
+//profile 
+          function savePicture() {
+      const fileInput = document.getElementById('profilePicture');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("Please select an image first.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        // Show preview
+        document.getElementById('profilePreview').src = dataUrl;
+        document.getElementById('profilePreview').style.display = 'block';
+        document.getElementById('profilePlaceholder').style.display = 'none';
+        // Save to localStorage
+        localStorage.setItem('userProfilePicture', dataUrl);
+        alert("Profile picture saved!");
+      };
+      reader.readAsDataURL(file);
+    }
+        
 
         // Function to display success messages in the custom success message box
         function showSuccessAlert(message) {
