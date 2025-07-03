@@ -15,6 +15,22 @@
         body {
             font-family: 'Inter', sans-serif;
         }
+        .profile-container {
+      width: 120px;
+      height: 120px;
+      border: 1px solid #ccc;
+      border-radius: 50%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f0f0;
+    }
+    .profile-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
         /* Custom styles for alternating rows in earnings modal for better readability */
         .ride-entry-card:nth-child(odd) {
             background-color: #f9fafb; /* Lighter background for odd rows */
@@ -116,7 +132,10 @@
                 <h2 class="text-2xl font-bold text-gray-800">🚖 ChakraX Driver</h2>
                 <p class="text-sm text-gray-500 mt-1">Welcome back, Captain!</p>
             </div>
-            <img src="https://cdn-icons-png.flaticon.com/512/1995/1995574.png" alt="Driver" class="w-12 h-12 rounded-full border-2 border-emerald-500 p-0.5 shadow-sm">
+            <div class="profile-container">
+    <img id="dashboardProfilePicture" src="" alt="Profile" style="display:none;">
+    <span id="dashboardPlaceholder">No Image</span>
+  </div>
         </div>
 
         <!-- Welcome & Status with Slider Toggle -->
@@ -481,6 +500,16 @@
         // ===================================================================================
         // DUMMY DATA
         // ===================================================================================
+        window.addEventListener('DOMContentLoaded', function() {
+      const savedImage = localStorage.getItem('userProfilePicture');
+      const img = document.getElementById('dashboardProfilePicture');
+      const placeholder = document.getElementById('dashboardPlaceholder');
+      if (savedImage) {
+        img.src = savedImage;
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+      }
+    });
 
         // Dummy Driver Profile Data
         const driverProfileData = {
